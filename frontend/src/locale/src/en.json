@@ -254,6 +254,12 @@
 	"column.authorizations": {
 		"defaultMessage": "Authorizations"
 	},
+	"column.color": {
+		"defaultMessage": "Color"
+	},
+	"column.created-on": {
+		"defaultMessage": "Created On"
+	},
 	"column.custom-locations": {
 		"defaultMessage": "Custom Locations"
 	},
@@ -313,6 +319,9 @@
 	},
 	"column.status": {
 		"defaultMessage": "Status"
+	},
+	"column.tags": {
+		"defaultMessage": "Tags"
 	},
 	"created-on": {
 		"defaultMessage": "Created: {date}"
@@ -715,6 +724,18 @@
 	},
 	"streams.udp": {
 		"defaultMessage": "UDP"
+	},
+	"tag": {
+		"defaultMessage": "Tag"
+	},
+	"tags": {
+		"defaultMessage": "Tags"
+	},
+	"tags.filter": {
+		"defaultMessage": "Filter by tags"
+	},
+	"tags.placeholder": {
+		"defaultMessage": "Select tags..."
 	},
 	"test": {
 		"defaultMessage": "Test"

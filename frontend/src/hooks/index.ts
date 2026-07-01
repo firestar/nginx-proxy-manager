@@ -17,6 +17,8 @@ export * from "./useRedirectionHosts";
 export * from "./useSetting";
 export * from "./useStream";
 export * from "./useStreams";
+export * from "./useTag";
+export * from "./useTags";
 export * from "./useTheme";
 export * from "./useUser";
 export * from "./useUsers";

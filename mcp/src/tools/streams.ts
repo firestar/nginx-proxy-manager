@@ -14,6 +14,10 @@ const optionalFields = {
 	udp_forwarding: z.boolean().optional().describe("Forward UDP traffic"),
 	certificate_id: z.number().int().optional().describe("Certificate id for TLS, or 0 for none"),
 	domain_names: z.array(z.string().min(1)).optional(),
+	tag_ids: z
+		.array(z.number().int())
+		.optional()
+		.describe("IDs of tags to attach; replaces the existing set"),
 	meta: z.record(z.unknown()).optional(),
 };
 
@@ -25,7 +29,7 @@ export function registerStreamTools(server: McpServer): void {
 			title: "List streams",
 			description: "List all TCP/UDP stream forwards.",
 			readOnly: true,
-			inputSchema: { expand: z.enum(["owner", "certificate"]).optional() },
+			inputSchema: { expand: z.enum(["owner", "certificate", "tags"]).optional() },
 		},
 		(args) => npmRequest("GET", BASE, { query: { expand: args.expand as string | undefined } }),
 	);

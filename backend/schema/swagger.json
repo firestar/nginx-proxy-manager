@@ -63,6 +63,10 @@
 		{
 			"name": "users",
 			"description": "Endpoints for managing users"
+		},
+		{
+			"name": "tags",
+			"description": "Endpoints related to Tags"
 		}
 	],
 	"paths": {
@@ -98,6 +102,25 @@
 			},
 			"delete": {
 				"$ref": "./paths/nginx/access-lists/listID/delete.json"
+			}
+		},
+		"/nginx/tags": {
+			"get": {
+				"$ref": "./paths/nginx/tags/get.json"
+			},
+			"post": {
+				"$ref": "./paths/nginx/tags/post.json"
+			}
+		},
+		"/nginx/tags/{tagID}": {
+			"get": {
+				"$ref": "./paths/nginx/tags/tagID/get.json"
+			},
+			"put": {
+				"$ref": "./paths/nginx/tags/tagID/put.json"
+			},
+			"delete": {
+				"$ref": "./paths/nginx/tags/tagID/delete.json"
 			}
 		},
 		"/nginx/certificates": {

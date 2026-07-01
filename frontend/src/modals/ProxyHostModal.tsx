@@ -15,6 +15,7 @@ import {
 	NginxConfigField,
 	SSLCertificateField,
 	SSLOptionsFields,
+	TagsField,
 } from "src/components";
 import { useProxyHost, useSetProxyHost, useUser } from "src/hooks";
 import { T } from "src/locale";
@@ -80,6 +81,7 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 							cachingEnabled: data?.cachingEnabled || false,
 							blockExploits: data?.blockExploits || false,
 							allowWebsocketUpgrade: data?.allowWebsocketUpgrade || false,
+							tagIds: data?.tags?.map((t) => t.id) || data?.tagIds || [],
 							// Locations tab
 							locations: data?.locations || [],
 							// SSL tab
@@ -254,6 +256,7 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 													</div>
 												</div>
 												<AccessField />
+												<TagsField />
 												<div className="my-3">
 													<h4 className="py-2">
 														<T id="options" />

@@ -41,6 +41,9 @@
 						"certificate_id": {
 							"$ref": "../../../components/stream-object.json#/properties/certificate_id"
 						},
+						"tag_ids": {
+							"$ref": "../../../common.json#/properties/tag_ids"
+						},
 						"meta": {
 							"$ref": "../../../components/stream-object.json#/properties/meta"
 						},

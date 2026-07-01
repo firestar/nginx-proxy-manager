@@ -41,6 +41,10 @@ const optionalFields = {
 	advanced_config: z.string().optional().describe("Raw nginx config snippet"),
 	enabled: z.boolean().optional(),
 	locations: z.array(location).optional().describe("Custom per-path forwarding locations"),
+	tag_ids: z
+		.array(z.number().int())
+		.optional()
+		.describe("IDs of tags to attach; replaces the existing set"),
 	meta: z.record(z.unknown()).optional(),
 };
 
@@ -54,7 +58,7 @@ export function registerProxyHostTools(server: McpServer): void {
 			readOnly: true,
 			inputSchema: {
 				expand: z
-					.enum(["access_list", "owner", "certificate"])
+					.enum(["access_list", "owner", "certificate", "tags"])
 					.optional()
 					.describe("Optionally expand a related object"),
 			},

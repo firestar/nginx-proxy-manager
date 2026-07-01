@@ -51,6 +51,9 @@
 						"advanced_config": {
 							"$ref": "../../../../components/dead-host-object.json#/properties/advanced_config"
 						},
+						"tag_ids": {
+							"$ref": "../../../../common.json#/properties/tag_ids"
+						},
 						"meta": {
 							"$ref": "../../../../components/dead-host-object.json#/properties/meta"
 						}

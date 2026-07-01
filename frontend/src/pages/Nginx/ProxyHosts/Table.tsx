@@ -15,6 +15,7 @@ import {
 	EmptyData,
 	GravatarFormatter,
 	HasPermission,
+	TagsFormatter,
 	TrueFalseFormatter,
 } from "src/components";
 import { TableLayout } from "src/components/Table/TableLayout";
@@ -85,6 +86,14 @@ export default function Table({ data, isFetching, onEdit, onDelete, onDisableTog
 				header: intl.formatMessage({ id: "column.access" }),
 				cell: (info: any) => {
 					return <AccessListFormatter access={info.getValue()} />;
+				},
+			}),
+			columnHelper.accessor((row: any) => row.tags, {
+				id: "tags",
+				enableSorting: false,
+				header: intl.formatMessage({ id: "column.tags" }),
+				cell: (info: any) => {
+					return <TagsFormatter tags={info.getValue()} />;
 				},
 			}),
 			columnHelper.accessor((row: any) => row.enabled, {

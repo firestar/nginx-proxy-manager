@@ -14,7 +14,7 @@
 			"description": "Expansions",
 			"schema": {
 				"type": "string",
-				"enum": ["owner", "certificate"]
+				"enum": ["owner", "certificate", "tags"]
 			}
 		}
 	],

@@ -7,6 +7,7 @@ import internalAuditLog from "./audit-log.js";
 import internalCertificate from "./certificate.js";
 import internalHost from "./host.js";
 import internalNginx from "./nginx.js";
+import internalTag from "./tag.js";
 
 const omissions = () => {
 	return ["is_deleted"];
@@ -25,6 +26,10 @@ const internalRedirectionHost = {
 		if (createCertificate) {
 			delete thisData.certificate_id;
 		}
+
+		// Pull tag_ids out so they aren't inserted as a column; synced separately.
+		const tagIds = thisData.tag_ids;
+		delete thisData.tag_ids;
 
 		return access
 			.can("redirection_hosts:create", thisData)
@@ -76,11 +81,12 @@ const internalRedirectionHost = {
 				}
 				return row;
 			})
-			.then((row) => {
-				// re-fetch with cert
+			.then(async (row) => {
+				// Sync tags then re-fetch with cert + tags
+				await internalTag.setForObject("redirection_host", row.id, tagIds);
 				return internalRedirectionHost.get(access, {
 					id: row.id,
-					expand: ["certificate", "owner"],
+					expand: ["certificate", "owner", "tags"],
 				});
 			})
 			.then((row) => {
@@ -119,6 +125,10 @@ const internalRedirectionHost = {
 		if (createCertificate) {
 			delete thisData.certificate_id;
 		}
+
+		// Pull tag_ids out so they aren't patched as a column; synced separately.
+		const tagIds = thisData.tag_ids;
+		delete thisData.tag_ids;
 
 		return access
 			.can("redirection_hosts:update", thisData.id)
@@ -201,11 +211,12 @@ const internalRedirectionHost = {
 							});
 					});
 			})
-			.then(() => {
+			.then(async () => {
+				await internalTag.setForObject("redirection_host", thisData.id, tagIds);
 				return internalRedirectionHost
 					.get(access, {
 						id: thisData.id,
-						expand: ["owner", "certificate"],
+						expand: ["owner", "certificate", "tags"],
 					})
 					.then((row) => {
 						// Configure nginx

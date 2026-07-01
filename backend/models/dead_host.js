@@ -6,6 +6,7 @@ import db from "../db.js";
 import { castJsonIfNeed, convertBoolFieldsToInt, convertIntFieldsToBool } from "../lib/helpers.js";
 import Certificate from "./certificate.js";
 import now from "./now_helper.js";
+import Tag from "./tag.js";
 import User from "./user.js";
 
 Model.knex(db());
@@ -62,7 +63,7 @@ class DeadHost extends Model {
 	}
 
 	static get defaultAllowGraph() {
-		return "[owner,certificate]";
+		return "[owner,certificate,tags]";
 	}
 
 	static get defaultExpand() {
@@ -95,6 +96,21 @@ class DeadHost extends Model {
 				},
 				modify: (qb) => {
 					qb.where("certificate.is_deleted", 0);
+				},
+			},
+			tags: {
+				relation: Model.ManyToManyRelation,
+				modelClass: Tag,
+				join: {
+					from: "dead_host.id",
+					through: {
+						from: "dead_host_tag.dead_host_id",
+						to: "dead_host_tag.tag_id",
+					},
+					to: "tag.id",
+				},
+				modify: (qb) => {
+					qb.where("tag.is_deleted", 0);
 				},
 			},
 		};

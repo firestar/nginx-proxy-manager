@@ -13,5 +13,6 @@ export * from "./RedirectionHostModal";
 export * from "./RenewCertificateModal";
 export * from "./SetPasswordModal";
 export * from "./StreamModal";
+export * from "./TagModal";
 export * from "./TwoFactorModal";
 export * from "./UserModal";

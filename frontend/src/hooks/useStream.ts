@@ -15,7 +15,7 @@ const fetchStream = (id: number | "new") => {
 			certificateId: 0,
 		} as Stream);
 	}
-	return getStream(id, ["owner"]);
+	return getStream(id, ["owner", "tags"]);
 };
 
 const useStream = (id: number | "new", options = {}) => {

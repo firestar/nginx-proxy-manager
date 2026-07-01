@@ -5,6 +5,7 @@ import {
 	IconLock,
 	IconSettings,
 	IconShield,
+	IconTag,
 	IconUser,
 } from "@tabler/icons-react";
 import cn from "classnames";
@@ -75,6 +76,11 @@ const menuItems: MenuItem[] = [
 		label: "access-lists",
 		permissionSection: ACCESS_LISTS,
 		permission: VIEW,
+	},
+	{
+		to: "/tags",
+		icon: IconTag,
+		label: "tags",
 	},
 	{
 		to: "/certificates",

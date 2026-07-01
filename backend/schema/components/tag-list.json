@@ -1,0 +1,7 @@
+{
+	"type": "array",
+	"description": "Tags list",
+	"items": {
+		"$ref": "./tag-object.json"
+	}
+}

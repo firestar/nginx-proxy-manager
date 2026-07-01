@@ -13,6 +13,7 @@ import {
 	EmptyData,
 	GravatarFormatter,
 	HasPermission,
+	TagsFormatter,
 	TrueFalseFormatter,
 	ValueWithDateFormatter,
 } from "src/components";
@@ -94,6 +95,14 @@ export default function Table({ data, isFetching, isFiltered, onEdit, onDelete, 
 				header: intl.formatMessage({ id: "column.ssl" }),
 				cell: (info: any) => {
 					return <CertificateFormatter certificate={info.getValue()} />;
+				},
+			}),
+			columnHelper.accessor((row: any) => row.tags, {
+				id: "tags",
+				enableSorting: false,
+				header: intl.formatMessage({ id: "column.tags" }),
+				cell: (info: any) => {
+					return <TagsFormatter tags={info.getValue()} />;
 				},
 			}),
 			columnHelper.accessor((row: any) => row.enabled, {

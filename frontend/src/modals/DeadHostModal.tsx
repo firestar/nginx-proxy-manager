@@ -11,6 +11,7 @@ import {
 	NginxConfigField,
 	SSLCertificateField,
 	SSLOptionsFields,
+	TagsField,
 } from "src/components";
 import { useDeadHost, useSetDeadHost } from "src/hooks";
 import { T } from "src/locale";
@@ -71,6 +72,7 @@ const DeadHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 							http2Support: data?.http2Support,
 							hstsEnabled: data?.hstsEnabled,
 							hstsSubdomains: data?.hstsSubdomains,
+							tagIds: data?.tags?.map((t) => t.id) || data?.tagIds || [],
 							meta: data?.meta || {},
 						} as any
 					}
@@ -132,6 +134,7 @@ const DeadHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 										<div className="tab-content">
 											<div className="tab-pane active show" id="tab-details" role="tabpanel">
 												<DomainNamesField isWildcardPermitted dnsProviderWildcardSupported />
+												<TagsField />
 											</div>
 											<div className="tab-pane" id="tab-ssl" role="tabpanel">
 												<SSLCertificateField

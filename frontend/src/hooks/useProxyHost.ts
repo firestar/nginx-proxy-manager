@@ -27,7 +27,7 @@ const fetchProxyHost = (id: number | "new") => {
 			trustForwardedProto: false,
 		} as ProxyHost);
 	}
-	return getProxyHost(id, ["owner"]);
+	return getProxyHost(id, ["owner", "tags"]);
 };
 
 const useProxyHost = (id: number | "new", options = {}) => {

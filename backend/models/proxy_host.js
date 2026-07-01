@@ -7,6 +7,7 @@ import { castJsonIfNeed, convertBoolFieldsToInt, convertIntFieldsToBool } from "
 import AccessList from "./access_list.js";
 import Certificate from "./certificate.js";
 import now from "./now_helper.js";
+import Tag from "./tag.js";
 import User from "./user.js";
 
 Model.knex(db());
@@ -74,7 +75,7 @@ class ProxyHost extends Model {
 	}
 
 	static get defaultAllowGraph() {
-		return "[owner,access_list.[clients,items],certificate]";
+		return "[owner,access_list.[clients,items],certificate,tags]";
 	}
 
 	static get defaultExpand() {
@@ -118,6 +119,21 @@ class ProxyHost extends Model {
 				},
 				modify: (qb) => {
 					qb.where("certificate.is_deleted", 0);
+				},
+			},
+			tags: {
+				relation: Model.ManyToManyRelation,
+				modelClass: Tag,
+				join: {
+					from: "proxy_host.id",
+					through: {
+						from: "proxy_host_tag.proxy_host_id",
+						to: "proxy_host_tag.tag_id",
+					},
+					to: "tag.id",
+				},
+				modify: (qb) => {
+					qb.where("tag.is_deleted", 0);
 				},
 			},
 		};

@@ -6,6 +6,7 @@ import db from "../db.js";
 import { castJsonIfNeed, convertBoolFieldsToInt, convertIntFieldsToBool } from "../lib/helpers.js";
 import Certificate from "./certificate.js";
 import now from "./now_helper.js";
+import Tag from "./tag.js";
 import User from "./user.js";
 
 Model.knex(db());
@@ -71,7 +72,7 @@ class RedirectionHost extends Model {
 	}
 
 	static get defaultAllowGraph() {
-		return "[owner,certificate]";
+		return "[owner,certificate,tags]";
 	}
 
 	static get defaultExpand() {
@@ -104,6 +105,21 @@ class RedirectionHost extends Model {
 				},
 				modify: (qb) => {
 					qb.where("certificate.is_deleted", 0);
+				},
+			},
+			tags: {
+				relation: Model.ManyToManyRelation,
+				modelClass: Tag,
+				join: {
+					from: "redirection_host.id",
+					through: {
+						from: "redirection_host_tag.redirection_host_id",
+						to: "redirection_host_tag.tag_id",
+					},
+					to: "tag.id",
+				},
+				modify: (qb) => {
+					qb.where("tag.is_deleted", 0);
 				},
 			},
 		};

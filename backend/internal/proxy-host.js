@@ -7,6 +7,7 @@ import internalAuditLog from "./audit-log.js";
 import internalCertificate from "./certificate.js";
 import internalHost from "./host.js";
 import internalNginx from "./nginx.js";
+import internalTag from "./tag.js";
 
 const omissions = () => {
 	return ["is_deleted", "owner.is_deleted"];
@@ -25,6 +26,10 @@ const internalProxyHost = {
 		if (createCertificate) {
 			delete thisData.certificate_id;
 		}
+
+		// Pull tag_ids out so they aren't inserted as a column; synced separately.
+		const tagIds = thisData.tag_ids;
+		delete thisData.tag_ids;
 
 		return access
 			.can("proxy_hosts:create", thisData)
@@ -76,11 +81,12 @@ const internalProxyHost = {
 				}
 				return row;
 			})
-			.then((row) => {
-				// re-fetch with cert
+			.then(async (row) => {
+				// Sync tags then re-fetch with cert + tags
+				await internalTag.setForObject("proxy_host", row.id, tagIds);
 				return internalProxyHost.get(access, {
 					id: row.id,
-					expand: ["certificate", "owner", "access_list.[clients,items]"],
+					expand: ["certificate", "owner", "access_list.[clients,items]", "tags"],
 				});
 			})
 			.then((row) => {
@@ -120,6 +126,11 @@ const internalProxyHost = {
 		if (createCertificate) {
 			delete thisData.certificate_id;
 		}
+
+		// Pull tag_ids out so they aren't patched as a column; synced separately.
+		// undefined means "don't touch tags" (e.g. internal cert-only updates).
+		const tagIds = data.tag_ids;
+		delete data.tag_ids;
 
 		return access
 			.can("proxy_hosts:update", thisData.id)
@@ -202,11 +213,12 @@ const internalProxyHost = {
 							});
 					});
 			})
-			.then(() => {
+			.then(async () => {
+				await internalTag.setForObject("proxy_host", thisData.id, tagIds);
 				return internalProxyHost
 					.get(access, {
 						id: thisData.id,
-						expand: ["owner", "certificate", "access_list.[clients,items]"],
+						expand: ["owner", "certificate", "access_list.[clients,items]", "tags"],
 					})
 					.then((row) => {
 						if (!row.enabled) {

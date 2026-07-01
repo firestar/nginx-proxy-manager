@@ -29,6 +29,10 @@ const optionalFields = {
 	http2_support: z.boolean().optional(),
 	block_exploits: z.boolean().optional(),
 	advanced_config: z.string().optional(),
+	tag_ids: z
+		.array(z.number().int())
+		.optional()
+		.describe("IDs of tags to attach; replaces the existing set"),
 	meta: z.record(z.unknown()).optional(),
 };
 
@@ -41,7 +45,7 @@ export function registerRedirectionHostTools(server: McpServer): void {
 			description: "List all redirection hosts.",
 			readOnly: true,
 			inputSchema: {
-				expand: z.enum(["owner", "certificate"]).optional(),
+				expand: z.enum(["owner", "certificate", "tags"]).optional(),
 			},
 		},
 		(args) => npmRequest("GET", BASE, { query: { expand: args.expand as string | undefined } }),

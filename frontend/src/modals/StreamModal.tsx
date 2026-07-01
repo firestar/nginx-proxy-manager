@@ -3,7 +3,7 @@ import { Field, Form, Formik } from "formik";
 import { type ReactNode, useState } from "react";
 import { Alert } from "react-bootstrap";
 import Modal from "react-bootstrap/Modal";
-import { Button, Loading, SSLCertificateField, SSLOptionsFields } from "src/components";
+import { Button, Loading, SSLCertificateField, SSLOptionsFields, TagsField } from "src/components";
 import { useSetStream, useStream } from "src/hooks";
 import { intl, T } from "src/locale";
 import { validateNumber, validateString } from "src/modules/Validations";
@@ -63,6 +63,7 @@ const StreamModal = EasyModal.create(({ id, visible, remove }: Props) => {
 							tcpForwarding: data?.tcpForwarding,
 							udpForwarding: data?.udpForwarding,
 							certificateId: data?.certificateId,
+							tagIds: data?.tags?.map((t) => t.id) || data?.tagIds || [],
 							meta: data?.meta || {},
 						} as any
 					}
@@ -280,6 +281,7 @@ const StreamModal = EasyModal.create(({ id, visible, remove }: Props) => {
 														</div>
 													</div>
 												</div>
+												<TagsField />
 											</div>
 											<div className="tab-pane" id="tab-ssl" role="tabpanel">
 												<SSLCertificateField

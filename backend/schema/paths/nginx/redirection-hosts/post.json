@@ -60,6 +60,9 @@
 						"advanced_config": {
 							"$ref": "../../../components/redirection-host-object.json#/properties/advanced_config"
 						},
+						"tag_ids": {
+							"$ref": "../../../common.json#/properties/tag_ids"
+						},
 						"meta": {
 							"$ref": "../../../components/redirection-host-object.json#/properties/meta"
 						}

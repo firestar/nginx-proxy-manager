@@ -76,6 +76,16 @@
 			"minimum": 0,
 			"example": 3
 		},
+		"tag_ids": {
+			"description": "IDs of tags to attach to this object. Replaces the existing set.",
+			"type": "array",
+			"uniqueItems": true,
+			"items": {
+				"type": "integer",
+				"minimum": 1
+			},
+			"example": [1, 2]
+		},
 		"domain_names": {
 			"description": "Domain Names separated by a comma",
 			"type": "array",

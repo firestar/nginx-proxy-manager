@@ -12,6 +12,7 @@ import {
 	NginxConfigField,
 	SSLCertificateField,
 	SSLOptionsFields,
+	TagsField,
 } from "src/components";
 import { useRedirectionHost, useSetRedirectionHost } from "src/hooks";
 import { T } from "src/locale";
@@ -73,6 +74,7 @@ const RedirectionHostModal = EasyModal.create(({ id, visible, remove }: Props) =
 							forwardHttpCode: data?.forwardHttpCode || 301,
 							preservePath: data?.preservePath || false,
 							blockExploits: data?.blockExploits || false,
+							tagIds: data?.tags?.map((t) => t.id) || data?.tagIds || [],
 							// SSL tab
 							certificateId: data?.certificateId || 0,
 							sslForced: data?.sslForced || false,
@@ -242,6 +244,7 @@ const RedirectionHostModal = EasyModal.create(({ id, visible, remove }: Props) =
 														</div>
 													)}
 												</Field>
+												<TagsField />
 												<div className="my-3">
 													<h4 className="py-2">
 														<T id="options" />

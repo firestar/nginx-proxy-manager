@@ -17,6 +17,10 @@ const optionalFields = {
 	hsts_subdomains: z.boolean().optional(),
 	http2_support: z.boolean().optional(),
 	advanced_config: z.string().optional(),
+	tag_ids: z
+		.array(z.number().int())
+		.optional()
+		.describe("IDs of tags to attach; replaces the existing set"),
 	meta: z.record(z.unknown()).optional(),
 };
 
@@ -28,7 +32,7 @@ export function registerDeadHostTools(server: McpServer): void {
 			title: "List 404 hosts",
 			description: "List all 404 (dead) hosts.",
 			readOnly: true,
-			inputSchema: { expand: z.enum(["owner", "certificate"]).optional() },
+			inputSchema: { expand: z.enum(["owner", "certificate", "tags"]).optional() },
 		},
 		(args) => npmRequest("GET", BASE, { query: { expand: args.expand as string | undefined } }),
 	);

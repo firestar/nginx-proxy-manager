@@ -60,6 +60,18 @@ export interface AccessList {
 	clients?: AccessListClient[];
 }
 
+export interface Tag {
+	id?: number;
+	createdOn?: string;
+	modifiedOn?: string;
+	ownerUserId?: number;
+	name: string;
+	color?: string;
+	meta?: Record<string, any>;
+	// Expansions:
+	owner?: User;
+}
+
 export interface AccessListItem {
 	id?: number;
 	createdOn?: string;
@@ -128,10 +140,12 @@ export interface ProxyHost {
 	hstsEnabled: boolean;
 	hstsSubdomains: boolean;
 	trustForwardedProto: boolean;
+	tagIds?: number[];
 	// Expansions:
 	owner?: User;
 	accessList?: AccessList;
 	certificate?: Certificate;
+	tags?: Tag[];
 }
 
 export interface DeadHost {
@@ -148,9 +162,11 @@ export interface DeadHost {
 	enabled: boolean;
 	hstsEnabled: boolean;
 	hstsSubdomains: boolean;
+	tagIds?: number[];
 	// Expansions:
 	owner?: User;
 	certificate?: Certificate;
+	tags?: Tag[];
 }
 
 export interface RedirectionHost {
@@ -172,9 +188,11 @@ export interface RedirectionHost {
 	enabled: boolean;
 	hstsEnabled: boolean;
 	hstsSubdomains: boolean;
+	tagIds?: number[];
 	// Expansions:
 	owner?: User;
 	certificate?: Certificate;
+	tags?: Tag[];
 }
 
 export interface Stream {
@@ -190,9 +208,11 @@ export interface Stream {
 	meta: Record<string, any>;
 	enabled: boolean;
 	certificateId: number;
+	tagIds?: number[];
 	// Expansions:
 	owner?: User;
 	certificate?: Certificate;
+	tags?: Tag[];
 }
 
 export interface Setting {

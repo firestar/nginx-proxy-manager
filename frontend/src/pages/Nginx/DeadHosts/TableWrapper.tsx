@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import Alert from "react-bootstrap/Alert";
 import { deleteDeadHost, toggleDeadHost } from "src/api/backend";
-import { Button, HasPermission, LoadingPage } from "src/components";
+import { Button, HasPermission, LoadingPage, TagFilter } from "src/components";
 import { useDeadHosts } from "src/hooks";
 import { T } from "src/locale";
 import { showDeadHostModal, showDeleteConfirmModal, showHelpModal } from "src/modals";
@@ -14,7 +14,8 @@ import Table from "./Table";
 export default function TableWrapper() {
 	const queryClient = useQueryClient();
 	const [search, setSearch] = useState("");
-	const { isFetching, isLoading, isError, error, data } = useDeadHosts(["owner", "certificate"]);
+	const [tagFilter, setTagFilter] = useState<number[]>([]);
+	const { isFetching, isLoading, isError, error, data } = useDeadHosts(["owner", "certificate", "tags"]);
 
 	if (isLoading) {
 		return <LoadingPage />;
@@ -37,9 +38,12 @@ export default function TableWrapper() {
 	};
 
 	let filtered = null;
-	if (search && data) {
+	if ((search || tagFilter.length) && data) {
 		filtered = data?.filter((item) => {
-			return item.domainNames.some((domain: string) => domain.toLowerCase().includes(search));
+			const matchesSearch =
+				!search || item.domainNames.some((domain: string) => domain.toLowerCase().includes(search));
+			const matchesTags = !tagFilter.length || tagFilter.every((tid) => item.tags?.some((t) => t.id === tid));
+			return matchesSearch && matchesTags;
 		});
 	} else if (search !== "") {
 		// this can happen if someone deletes the last item while searching
@@ -74,6 +78,7 @@ export default function TableWrapper() {
 										/>
 									</div>
 								) : null}
+								{data?.length ? <TagFilter value={tagFilter} onChange={setTagFilter} /> : null}
 								<Button size="sm" onClick={() => showHelpModal("DeadHosts", "red")}>
 									<IconHelp size={20} />
 								</Button>
@@ -90,7 +95,7 @@ export default function TableWrapper() {
 				</div>
 				<Table
 					data={filtered ?? data ?? []}
-					isFiltered={!!search}
+					isFiltered={!!filtered}
 					isFetching={isFetching}
 					onEdit={(id: number) => showDeadHostModal(id)}
 					onDelete={(id: number) =>

@@ -109,6 +109,13 @@
 			],
 			"example": null
 		},
+		"tags": {
+			"type": "array",
+			"description": "Tags attached to this object",
+			"items": {
+				"$ref": "./tag-object.json"
+			}
+		},
 		"owner": {
 			"$ref": "./user-object.json"
 		}

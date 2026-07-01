@@ -29,7 +29,7 @@ const fetchRedirectionHost = (id: number | "new") => {
 			hstsSubdomains: false,
 		} as RedirectionHost);
 	}
-	return getRedirectionHost(id, ["owner"]);
+	return getRedirectionHost(id, ["owner", "tags"]);
 };
 
 const useRedirectionHost = (id: number | "new", options = {}) => {

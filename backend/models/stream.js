@@ -3,6 +3,7 @@ import db from "../db.js";
 import { castJsonIfNeed, convertBoolFieldsToInt, convertIntFieldsToBool } from "../lib/helpers.js";
 import Certificate from "./certificate.js";
 import now from "./now_helper.js";
+import Tag from "./tag.js";
 import User from "./user.js";
 
 Model.knex(db());
@@ -47,7 +48,7 @@ class Stream extends Model {
 	}
 
 	static get defaultAllowGraph() {
-		return "[owner,certificate]";
+		return "[owner,certificate,tags]";
 	}
 
 	static get defaultExpand() {
@@ -80,6 +81,21 @@ class Stream extends Model {
 				},
 				modify: (qb) => {
 					qb.where("certificate.is_deleted", 0);
+				},
+			},
+			tags: {
+				relation: Model.ManyToManyRelation,
+				modelClass: Tag,
+				join: {
+					from: "stream.id",
+					through: {
+						from: "stream_tag.stream_id",
+						to: "stream_tag.tag_id",
+					},
+					to: "tag.id",
+				},
+				modify: (qb) => {
+					qb.where("tag.is_deleted", 0);
 				},
 			},
 		};

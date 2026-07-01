@@ -7,6 +7,7 @@ import internalAuditLog from "./audit-log.js";
 import internalCertificate from "./certificate.js";
 import internalHost from "./host.js";
 import internalNginx from "./nginx.js";
+import internalTag from "./tag.js";
 
 const omissions = () => {
 	return ["is_deleted"];
@@ -24,6 +25,10 @@ const internalDeadHost = {
 		if (createCertificate) {
 			delete data.certificate_id;
 		}
+
+		// Pull tag_ids out so they aren't inserted as a column; synced separately.
+		const tagIds = data.tag_ids;
+		delete data.tag_ids;
 
 		await access.can("dead_hosts:create", data);
 
@@ -76,10 +81,11 @@ const internalDeadHost = {
 			});
 		}
 
-		// re-fetch with cert
+		// Sync tags then re-fetch with cert + tags
+		await internalTag.setForObject("dead_host", row.id, tagIds);
 		const freshRow = await internalDeadHost.get(access, {
 			id: row.id,
-			expand: ["certificate", "owner"],
+			expand: ["certificate", "owner", "tags"],
 		});
 
 		// Sanity check
@@ -104,6 +110,10 @@ const internalDeadHost = {
 		if (createCertificate) {
 			delete data.certificate_id;
 		}
+
+		// Pull tag_ids out so they aren't patched as a column; synced separately.
+		const tagIds = data.tag_ids;
+		delete data.tag_ids;
 
 		await access.can("dead_hosts:update", data.id);
 
@@ -168,10 +178,11 @@ const internalDeadHost = {
 			meta: thisData,
 		});
 
+		await internalTag.setForObject("dead_host", thisData.id, tagIds);
 		const thisRow = await internalDeadHost
 			.get(access, {
 				id: thisData.id,
-				expand: ["owner", "certificate"],
+				expand: ["owner", "certificate", "tags"],
 			});
 
 		// Configure nginx

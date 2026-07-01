@@ -6,6 +6,7 @@ import { registerMiscTools } from "./tools/misc.js";
 import { registerProxyHostTools } from "./tools/proxy-hosts.js";
 import { registerRedirectionHostTools } from "./tools/redirection-hosts.js";
 import { registerStreamTools } from "./tools/streams.js";
+import { registerTagTools } from "./tools/tags.js";
 
 /**
  * Create a fresh MCP server instance with all NPM tools registered. A new
@@ -31,6 +32,7 @@ export function createMcpServer(): McpServer {
 	registerStreamTools(server);
 	registerCertificateTools(server);
 	registerAccessListTools(server);
+	registerTagTools(server);
 	registerMiscTools(server);
 
 	return server;

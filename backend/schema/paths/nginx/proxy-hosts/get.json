@@ -19,7 +19,8 @@
 				"enum": [
 					"access_list",
 					"owner",
-					"certificate"
+					"certificate",
+					"tags"
 				]
 			}
 		}

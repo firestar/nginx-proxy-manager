@@ -1,0 +1,10 @@
+{
+	"anyOf": [
+		{
+			"$ref": "roles#/definitions/admin"
+		},
+		{
+			"$ref": "roles#/definitions/user"
+		}
+	]
+}

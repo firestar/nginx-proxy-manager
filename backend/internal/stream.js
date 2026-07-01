@@ -7,6 +7,7 @@ import internalAuditLog from "./audit-log.js";
 import internalCertificate from "./certificate.js";
 import internalHost from "./host.js";
 import internalNginx from "./nginx.js";
+import internalTag from "./tag.js";
 
 const omissions = () => {
 	return ["is_deleted", "owner.is_deleted", "certificate.is_deleted"];
@@ -24,6 +25,10 @@ const internalStream = {
 		if (create_certificate) {
 			delete data.certificate_id;
 		}
+
+		// Pull tag_ids out so they aren't inserted as a column; synced separately.
+		const tagIds = data.tag_ids;
+		delete data.tag_ids;
 
 		return access
 			.can("streams:create", data)
@@ -58,11 +63,12 @@ const internalStream = {
 				}
 				return row;
 			})
-			.then((row) => {
-				// re-fetch with cert
+			.then(async (row) => {
+				// Sync tags then re-fetch with cert + tags
+				await internalTag.setForObject("stream", row.id, tagIds);
 				return internalStream.get(access, {
 					id: row.id,
-					expand: ["certificate", "owner"],
+					expand: ["certificate", "owner", "tags"],
 				});
 			})
 			.then((row) => {
@@ -99,6 +105,10 @@ const internalStream = {
 		if (create_certificate) {
 			delete thisData.certificate_id;
 		}
+
+		// Pull tag_ids out so they aren't patched as a column; synced separately.
+		const tagIds = thisData.tag_ids;
+		delete thisData.tag_ids;
 
 		return access
 			.can("streams:update", thisData.id)
@@ -158,8 +168,9 @@ const internalStream = {
 							});
 					});
 			})
-			.then(() => {
-				return internalStream.get(access, { id: thisData.id, expand: ["owner", "certificate"] }).then((row) => {
+			.then(async () => {
+				await internalTag.setForObject("stream", thisData.id, tagIds);
+				return internalStream.get(access, { id: thisData.id, expand: ["owner", "certificate", "tags"] }).then((row) => {
 					return internalNginx.configure(streamModel, "stream", row).then((new_meta) => {
 						row.meta = new_meta;
 						return _.omit(internalHost.cleanRowCertificateMeta(row), omissions());

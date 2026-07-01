@@ -80,6 +80,9 @@
 						"enabled": {
 							"$ref": "../../../../components/proxy-host-object.json#/properties/enabled"
 						},
+						"tag_ids": {
+							"$ref": "../../../../common.json#/properties/tag_ids"
+						},
 						"meta": {
 							"$ref": "../../../../components/proxy-host-object.json#/properties/meta"
 						},
