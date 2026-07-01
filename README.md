@@ -88,6 +88,34 @@ Sometimes this can take a little bit because of the entropy of keys.
 [http://127.0.0.1:81](http://127.0.0.1:81)
 
 
+## AI Control via MCP
+
+This repo includes an optional [Model Context Protocol](https://modelcontextprotocol.io)
+server in [`mcp/`](mcp/) that lets an AI assistant (such as Claude) manage your
+running Nginx Proxy Manager instance — creating and editing proxy hosts,
+redirections, 404 hosts, TCP/UDP streams, SSL certificates and access lists
+through NPM's existing API.
+
+- **Transport:** Streamable HTTP (`/mcp`)
+- **Auth to NPM:** logs in with credentials from environment variables and
+  auto-refreshes the JWT (use an account without 2FA)
+- **Tools:** 46 `npm_*` tools covering full CRUD for every host type plus
+  read-only users/settings/audit-log/reports
+
+Quick start:
+
+```bash
+cd mcp
+npm install
+cp .env.example .env   # set NPM_BASE_URL, NPM_IDENTITY, NPM_SECRET
+npm run build
+npm start
+```
+
+See [`mcp/README.md`](mcp/README.md) for full configuration, the tool list, and a
+Docker Compose example that runs it alongside NPM.
+
+
 ## Contributing
 
 All are welcome to create pull requests for this project, against the `develop` branch. Official releases are created from the `master` branch.

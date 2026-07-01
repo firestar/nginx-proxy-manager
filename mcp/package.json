@@ -1,0 +1,29 @@
+{
+	"name": "nginx-proxy-manager-mcp",
+	"version": "0.1.0",
+	"description": "Model Context Protocol server that lets an AI assistant manage Nginx Proxy Manager (proxy hosts, redirections, streams, 404 hosts, certificates, access lists).",
+	"license": "MIT",
+	"type": "module",
+	"main": "dist/index.js",
+	"bin": {
+		"npm-mcp": "dist/index.js"
+	},
+	"engines": {
+		"node": ">=18"
+	},
+	"scripts": {
+		"build": "tsc",
+		"start": "node dist/index.js",
+		"dev": "tsc --watch"
+	},
+	"dependencies": {
+		"@modelcontextprotocol/sdk": "^1.19.1",
+		"express": "^5.1.0",
+		"zod": "^3.25.76"
+	},
+	"devDependencies": {
+		"@types/express": "^5.0.1",
+		"@types/node": "^22.13.0",
+		"typescript": "^5.7.3"
+	}
+}
