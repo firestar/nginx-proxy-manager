@@ -1,0 +1,15 @@
+version: 1
+
+# Build the full NPM image via the self-contained Dockerfile (frontend is
+# compiled inside the build; docker/Dockerfile expects a pre-built dist).
+dockerfile:
+  path: docker/Dockerfile.kaiad
+  context: .
+
+ports:
+  - port: 80
+    name: http
+  - port: 81
+    name: admin
+  - port: 443
+    name: https
