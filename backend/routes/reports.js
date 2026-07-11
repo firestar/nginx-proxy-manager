@@ -29,4 +29,27 @@ router
 		}
 	});
 
+router
+	.route("/proxy-hosts/:id/metrics")
+	.options((_, res) => {
+		res.sendStatus(204);
+	})
+	.all(jwtdecode())
+
+	/**
+	 * GET /reports/proxy-hosts/:id/metrics
+	 */
+	.get(async (req, res, next) => {
+		try {
+			const data = await internalReport.getProxyHostMetrics(res.locals.access, {
+				id: Number.parseInt(req.params.id, 10),
+				range: req.query.range,
+			});
+			res.status(200).send(data);
+		} catch (err) {
+			debug(logger, `${req.method.toUpperCase()} ${req.path}: ${err}`);
+			next(err);
+		}
+	});
+
 export default router;

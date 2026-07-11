@@ -1,0 +1,131 @@
+{
+	"operationId": "reportsProxyHostMetrics",
+	"summary": "Get Metrics for a Proxy Host",
+	"tags": ["reports"],
+	"security": [
+		{
+			"bearerAuth": []
+		}
+	],
+	"parameters": [
+		{
+			"in": "path",
+			"name": "hostID",
+			"description": "The ID of the Proxy Host",
+			"schema": {
+				"type": "integer",
+				"minimum": 1
+			},
+			"required": true,
+			"example": 1
+		},
+		{
+			"in": "query",
+			"name": "range",
+			"description": "Time range for metrics",
+			"schema": {
+				"type": "string",
+				"enum": ["1h", "24h", "7d", "30d"],
+				"default": "24h"
+			},
+			"required": false,
+			"example": "24h"
+		}
+	],
+	"responses": {
+		"200": {
+			"description": "200 response",
+			"content": {
+				"application/json": {
+					"examples": {
+						"default": {
+							"value": {
+								"range": "24h",
+								"buckets": [
+									{
+										"bucket": "2026-07-10 12:00:00",
+										"requests": 120,
+										"bytesSent": 204800,
+										"status2xx": 110,
+										"status3xx": 5,
+										"status4xx": 4,
+										"status5xx": 1,
+										"cacheHits": 30
+									}
+								],
+								"totals": {
+									"requests": 120,
+									"bytesSent": 204800,
+									"cacheHitRatio": 0.25,
+									"errorRate": 0.0417
+								}
+							}
+						}
+					},
+					"schema": {
+						"type": "object",
+						"properties": {
+							"range": {
+								"type": "string",
+								"enum": ["1h", "24h", "7d", "30d"],
+								"description": "Requested time range"
+							},
+							"buckets": {
+								"type": "array",
+								"items": {
+									"type": "object",
+									"properties": {
+										"bucket": {
+											"type": "string",
+											"description": "Bucket datetime (YYYY-MM-DD HH:MM:SS)"
+										},
+										"requests": {
+											"type": "integer"
+										},
+										"bytesSent": {
+											"type": "integer"
+										},
+										"status2xx": {
+											"type": "integer"
+										},
+										"status3xx": {
+											"type": "integer"
+										},
+										"status4xx": {
+											"type": "integer"
+										},
+										"status5xx": {
+											"type": "integer"
+										},
+										"cacheHits": {
+											"type": "integer"
+										}
+									}
+								}
+							},
+							"totals": {
+								"type": "object",
+								"properties": {
+									"requests": {
+										"type": "integer"
+									},
+									"bytesSent": {
+										"type": "integer"
+									},
+									"cacheHitRatio": {
+										"type": "number",
+										"description": "Cache hits / total requests (0 if no requests)"
+									},
+									"errorRate": {
+										"type": "number",
+										"description": "4xx+5xx errors / total requests (0 if no requests)"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
