@@ -7,6 +7,7 @@ const BASE = "/nginx/tags";
 
 const name = z.string().min(1).max(100).describe("Tag name, e.g. 'Production'");
 const color = z.string().max(32).optional().describe("Optional hex color, e.g. '#206bc4'");
+const icon = z.string().max(50).optional().describe("Optional Tabler icon name, e.g. 'server'");
 
 export function registerTagTools(server: McpServer): void {
 	registerTool(
@@ -48,7 +49,7 @@ export function registerTagTools(server: McpServer): void {
 		{
 			title: "Create tag",
 			description: "Create a tag that can be attached to proxy hosts, redirections, streams and 404 hosts.",
-			inputSchema: { name, color, meta: z.record(z.unknown()).optional() },
+			inputSchema: { name, color, icon, meta: z.record(z.unknown()).optional() },
 		},
 		(args) => npmRequest("POST", BASE, { body: args }),
 	);
@@ -58,11 +59,12 @@ export function registerTagTools(server: McpServer): void {
 		"npm_update_tag",
 		{
 			title: "Update tag",
-			description: "Update a tag's name or color. Only include fields you want to change.",
+			description: "Update a tag's name, color or icon. Only include fields you want to change.",
 			inputSchema: {
 				id: z.number().int().describe("Tag id"),
 				name: name.optional(),
 				color,
+				icon,
 				meta: z.record(z.unknown()).optional(),
 			},
 		},

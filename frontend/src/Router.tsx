@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import {
+	CommandPalette,
 	ErrorNotFound,
 	LoadingPage,
 	Page,
@@ -20,6 +21,7 @@ const Settings = lazy(() => import("src/pages/Settings"));
 const Certificates = lazy(() => import("src/pages/Certificates"));
 const Access = lazy(() => import("src/pages/Access"));
 const Tags = lazy(() => import("src/pages/Tags"));
+const TagGroups = lazy(() => import("src/pages/TagGroups"));
 const AuditLog = lazy(() => import("src/pages/AuditLog"));
 const Users = lazy(() => import("src/pages/Users"));
 const ProxyHosts = lazy(() => import("src/pages/Nginx/ProxyHosts"));
@@ -53,6 +55,7 @@ function Router() {
 
 	return (
 		<BrowserRouter>
+			<CommandPalette />
 			<Page>
 				<div>
 					<SiteHeader />
@@ -65,6 +68,7 @@ function Router() {
 							<Route path="/certificates" element={<Certificates />} />
 							<Route path="/access" element={<Access />} />
 							<Route path="/tags" element={<Tags />} />
+							<Route path="/groups" element={<TagGroups />} />
 							<Route path="/audit-log" element={<AuditLog />} />
 							<Route path="/settings" element={<Settings />} />
 							<Route path="/users" element={<Users />} />

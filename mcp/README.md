@@ -94,7 +94,7 @@ delete tools change live configuration.
 `npm_create_access_list`, `npm_update_access_list`, `npm_delete_access_list`
 
 **Tags:** `npm_list_tags`, `npm_get_tag`, `npm_create_tag`, `npm_update_tag`,
-`npm_delete_tag`. Tags organize hosts across types; attach them by passing
+`npm_delete_tag`. Tags (name, color, icon) organize hosts across types; attach them by passing
 `tag_ids` when creating/updating any host, and read them back with `expand: "tags"`
 on the host list tools.
 

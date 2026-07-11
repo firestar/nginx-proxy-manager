@@ -7,6 +7,7 @@ import type { Tag } from "src/api/backend";
 import { Button, Loading } from "src/components";
 import { useSetTag, useTag } from "src/hooks";
 import { T } from "src/locale";
+import { TAG_COLORS, TAG_ICONS } from "src/modules/TagIcons";
 import { validateString } from "src/modules/Validations";
 import { showObjectSuccess } from "src/notifications";
 
@@ -60,6 +61,7 @@ const TagModal = EasyModal.create(({ id, visible, remove }: Props) => {
 						{
 							name: data?.name || "",
 							color: data?.color || "",
+							icon: data?.icon || "",
 						} as Tag
 					}
 					onSubmit={onSubmit}
@@ -98,17 +100,41 @@ const TagModal = EasyModal.create(({ id, visible, remove }: Props) => {
 									)}
 								</Field>
 								<Field name="color">
-									{({ field }: any) => (
+									{({ field, form }: any) => (
 										<div className="mb-3">
 											<label htmlFor="color" className="form-label">
 												<T id="column.color" />
 											</label>
+											<div className="d-flex flex-wrap gap-2 mb-2">
+												{TAG_COLORS.map((c) => (
+													<button
+														key={c}
+														type="button"
+														aria-label={c}
+														onClick={() => form.setFieldValue("color", c)}
+														style={{
+															width: 26,
+															height: 26,
+															borderRadius: 8,
+															backgroundColor: c,
+															border:
+																field.value === c
+																	? "2px solid var(--tblr-body-color)"
+																	: "2px solid transparent",
+															outline:
+																field.value === c ? "2px solid var(--tblr-bg-surface)" : "none",
+															outlineOffset: -4,
+															cursor: "pointer",
+														}}
+													/>
+												))}
+											</div>
 											<div className="input-group">
 												<input
 													id="color"
 													type="color"
 													className="form-control form-control-color"
-													value={field.value || "#206bc4"}
+													value={field.value || "#6366f1"}
 													onChange={field.onChange}
 													name={field.name}
 												/>
@@ -116,9 +142,34 @@ const TagModal = EasyModal.create(({ id, visible, remove }: Props) => {
 													type="text"
 													className="form-control"
 													autoComplete="off"
-													placeholder="#206bc4"
+													placeholder="#6366f1"
 													{...field}
 												/>
+											</div>
+										</div>
+									)}
+								</Field>
+								<Field name="icon">
+									{({ field, form }: any) => (
+										<div className="mb-3">
+											<label htmlFor="icon" className="form-label">
+												<T id="column.icon" />
+											</label>
+											<div className="d-flex flex-wrap gap-1">
+												{Object.entries(TAG_ICONS).map(([name, Icon]) => {
+													const selected = field.value === name;
+													return (
+														<button
+															key={name}
+															type="button"
+															title={name}
+															className={`btn btn-icon btn-sm ${selected ? "btn-primary" : "btn-ghost-secondary"}`}
+															onClick={() => form.setFieldValue("icon", selected ? "" : name)}
+														>
+															<Icon size={18} />
+														</button>
+													);
+												})}
 											</div>
 										</div>
 									)}

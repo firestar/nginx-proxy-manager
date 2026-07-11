@@ -67,6 +67,7 @@ export interface Tag {
 	ownerUserId?: number;
 	name: string;
 	color?: string;
+	icon?: string;
 	meta?: Record<string, any>;
 	// Expansions:
 	owner?: User;

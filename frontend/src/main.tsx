@@ -5,6 +5,7 @@ import App from "src/App.tsx";
 import "@tabler/core/dist/css/tabler.min.css";
 import "@tabler/core/dist/js/tabler.min.js";
 import "./App.css";
+import "./theme/reskin.css";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
 	<React.StrictMode>

@@ -3,11 +3,12 @@ import {
 	createColumnHelper,
 	getCoreRowModel,
 	getSortedRowModel,
+	type RowSelectionState,
 	type SortingState,
 	useReactTable,
 } from "@tanstack/react-table";
-import { useMemo, useState } from "react";
-import type { Stream } from "src/api/backend";
+import { useEffect, useMemo, useState } from "react";
+import type { Stream, Tag } from "src/api/backend";
 import {
 	CertificateFormatter,
 	EmptyData,
@@ -29,11 +30,47 @@ interface Props {
 	onDelete?: (id: number) => void;
 	onDisableToggle?: (id: number, enabled: boolean) => void;
 	onNew?: () => void;
+	onTagClick?: (tag: Tag) => void;
+	onSelectionChange?: (ids: number[]) => void;
 }
-export default function Table({ data, isFetching, isFiltered, onEdit, onDelete, onDisableToggle, onNew }: Props) {
+export default function Table({
+	data,
+	isFetching,
+	isFiltered,
+	onEdit,
+	onDelete,
+	onDisableToggle,
+	onNew,
+	onTagClick,
+	onSelectionChange,
+}: Props) {
 	const columnHelper = createColumnHelper<Stream>();
 	const columns = useMemo(
 		() => [
+			columnHelper.display({
+				id: "select",
+				header: ({ table }: any) => (
+					<input
+						type="checkbox"
+						className="form-check-input m-0"
+						checked={table.getIsAllRowsSelected()}
+						onChange={table.getToggleAllRowsSelectedHandler()}
+						aria-label="Select all"
+					/>
+				),
+				cell: ({ row }: any) => (
+					<input
+						type="checkbox"
+						className="form-check-input m-0"
+						checked={row.getIsSelected()}
+						onChange={row.getToggleSelectedHandler()}
+						aria-label="Select row"
+					/>
+				),
+				meta: {
+					className: "w-1",
+				},
+			}),
 			columnHelper.accessor((row: any) => row.owner, {
 				id: "owner",
 				enableSorting: false,
@@ -102,7 +139,7 @@ export default function Table({ data, isFetching, isFiltered, onEdit, onDelete, 
 				enableSorting: false,
 				header: intl.formatMessage({ id: "column.tags" }),
 				cell: (info: any) => {
-					return <TagsFormatter tags={info.getValue()} />;
+					return <TagsFormatter tags={info.getValue()} onTagClick={onTagClick} />;
 				},
 			}),
 			columnHelper.accessor((row: any) => row.enabled, {
@@ -178,16 +215,28 @@ export default function Table({ data, isFetching, isFiltered, onEdit, onDelete, 
 				},
 			}),
 		],
-		[columnHelper, onEdit, onDisableToggle, onDelete],
+		[columnHelper, onEdit, onDisableToggle, onDelete, onTagClick],
 	);
 
 	const [sorting, setSorting] = useState<SortingState>([]);
+	const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+
+	useEffect(() => {
+		onSelectionChange?.(
+			Object.keys(rowSelection)
+				.map(Number)
+				.filter((n) => n > 0),
+		);
+	}, [rowSelection, onSelectionChange]);
 
 	const tableInstance = useReactTable<Stream>({
 		columns,
 		data,
-		state: { sorting },
+		state: { sorting, rowSelection },
 		onSortingChange: setSorting,
+		onRowSelectionChange: setRowSelection,
+		enableRowSelection: true,
+		getRowId: (row: any) => `${row.id}`,
 		getCoreRowModel: getCoreRowModel(),
 		getSortedRowModel: getSortedRowModel(),
 		rowCount: data.length,

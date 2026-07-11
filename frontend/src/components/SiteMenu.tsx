@@ -5,6 +5,7 @@ import {
 	IconLock,
 	IconSettings,
 	IconShield,
+	IconStack2,
 	IconTag,
 	IconUser,
 } from "@tabler/icons-react";
@@ -81,6 +82,11 @@ const menuItems: MenuItem[] = [
 		to: "/tags",
 		icon: IconTag,
 		label: "tags",
+	},
+	{
+		to: "/groups",
+		icon: IconStack2,
+		label: "tag-groups",
 	},
 	{
 		to: "/certificates",

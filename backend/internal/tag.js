@@ -34,6 +34,7 @@ const internalTag = {
 			.insertAndFetch({
 				name: data.name,
 				color: typeof data.color !== "undefined" ? data.color : "",
+				icon: typeof data.icon !== "undefined" ? data.icon : "",
 				meta: typeof data.meta !== "undefined" ? data.meta : {},
 				owner_user_id: access.token.getUserId(1),
 			})
@@ -69,7 +70,7 @@ const internalTag = {
 			.query()
 			.where({ id: data.id })
 			.patch(_.pick(data, ["name", "color", "meta"]));
-
+			.patch(_.pick(data, ["name", "color", "icon", "meta"]));
 		await internalAuditLog.add(access, {
 			action: "updated",
 			object_type: "tag",

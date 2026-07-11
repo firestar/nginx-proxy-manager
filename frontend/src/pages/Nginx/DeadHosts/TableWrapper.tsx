@@ -1,20 +1,29 @@
-import { IconHelp, IconSearch } from "@tabler/icons-react";
+import { IconHelp, IconSearch, IconTags } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import Alert from "react-bootstrap/Alert";
-import { deleteDeadHost, toggleDeadHost } from "src/api/backend";
+import { useSearchParams } from "react-router-dom";
+import { deleteDeadHost, type Tag, toggleDeadHost } from "src/api/backend";
 import { Button, HasPermission, LoadingPage, TagFilter } from "src/components";
 import { useDeadHosts } from "src/hooks";
 import { T } from "src/locale";
-import { showDeadHostModal, showDeleteConfirmModal, showHelpModal } from "src/modals";
+import { showBulkTagModal, showDeadHostModal, showDeleteConfirmModal, showHelpModal } from "src/modals";
 import { DEAD_HOSTS, MANAGE } from "src/modules/Permissions";
 import { showObjectSuccess } from "src/notifications";
 import Table from "./Table";
 
+const tagIdsFromParams = (params: URLSearchParams): number[] =>
+	(params.get("tags") || "")
+		.split(",")
+		.map(Number)
+		.filter((n) => Number.isInteger(n) && n > 0);
+
 export default function TableWrapper() {
 	const queryClient = useQueryClient();
+	const [searchParams] = useSearchParams();
 	const [search, setSearch] = useState("");
-	const [tagFilter, setTagFilter] = useState<number[]>([]);
+	const [tagFilter, setTagFilter] = useState<number[]>(() => tagIdsFromParams(searchParams));
+	const [selectedIds, setSelectedIds] = useState<number[]>([]);
 	const { isFetching, isLoading, isError, error, data } = useDeadHosts(["owner", "certificate", "tags"]);
 
 	if (isLoading) {
@@ -37,6 +46,12 @@ export default function TableWrapper() {
 		showObjectSuccess("dead-host", enabled ? "enabled" : "disabled");
 	};
 
+	const handleTagClick = (tag: Tag) => {
+		if (tag.id) {
+			setTagFilter((prev) => (prev.includes(tag.id || 0) ? prev : [...prev, tag.id || 0]));
+		}
+	};
+
 	let filtered = null;
 	if ((search || tagFilter.length) && data) {
 		filtered = data?.filter((item) => {
@@ -49,6 +64,8 @@ export default function TableWrapper() {
 		// this can happen if someone deletes the last item while searching
 		setSearch("");
 	}
+
+	const selectedHosts = data?.filter((h) => selectedIds.includes(h.id || 0)) || [];
 
 	return (
 		<div className="card mt-4">
@@ -64,6 +81,18 @@ export default function TableWrapper() {
 
 						<div className="col-md-auto col-sm-12">
 							<div className="ms-auto d-flex flex-wrap btn-list">
+								{selectedHosts.length ? (
+									<HasPermission section={DEAD_HOSTS} permission={MANAGE} hideError>
+										<Button
+											size="sm"
+											className="btn-outline-primary"
+											onClick={() => showBulkTagModal("dead", selectedHosts)}
+										>
+											<IconTags size={16} className="me-1" />
+											<T id="bulk.edit-tags" /> ({selectedHosts.length})
+										</Button>
+									</HasPermission>
+								) : null}
 								{data?.length ? (
 									<div className="input-group input-group-flat w-auto">
 										<span className="input-group-text input-group-text-sm">
@@ -108,6 +137,8 @@ export default function TableWrapper() {
 					}
 					onDisableToggle={handleDisableToggle}
 					onNew={() => showDeadHostModal("new")}
+					onTagClick={handleTagClick}
+					onSelectionChange={setSelectedIds}
 				/>
 			</div>
 		</div>

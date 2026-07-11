@@ -1,42 +1,150 @@
-import { IconArrowsCross, IconBolt, IconBoltOff, IconDisc } from "@tabler/icons-react";
+import {
+	IconArrowsCross,
+	IconBolt,
+	IconBoltOff,
+	IconDisc,
+	IconPlus,
+	IconShield,
+	IconTag,
+} from "@tabler/icons-react";
+import type { ComponentType } from "react";
 import { useNavigate } from "react-router-dom";
-import { HasPermission } from "src/components";
-import { useHostReport } from "src/hooks";
+import { EventFormatter, GravatarFormatter, HasPermission } from "src/components";
+import { useAuditLogs, useCertificates, useHostReport, useTags, useUser } from "src/hooks";
 import { T } from "src/locale";
-import { DEAD_HOSTS, PROXY_HOSTS, REDIRECTION_HOSTS, STREAMS, VIEW } from "src/modules/Permissions";
+import {
+	showDeadHostModal,
+	showProxyHostModal,
+	showRedirectionHostModal,
+	showStreamModal,
+	showTagModal,
+} from "src/modals";
+import {
+	ADMIN,
+	CERTIFICATES,
+	DEAD_HOSTS,
+	MANAGE,
+	PROXY_HOSTS,
+	REDIRECTION_HOSTS,
+	type Section,
+	STREAMS,
+	VIEW,
+} from "src/modules/Permissions";
+
+interface StatCard {
+	labelId: string;
+	count?: number;
+	to: string;
+	icon: ComponentType<{ size?: number | string }>;
+	color: string;
+	section?: Section;
+}
 
 const Dashboard = () => {
 	const { data: hostReport } = useHostReport();
+	const { data: certificates } = useCertificates();
+	const { data: tags } = useTags();
+	const { data: currentUser } = useUser("me");
+	const isAdmin = currentUser?.roles.includes("admin");
+	const { data: auditLogs } = useAuditLogs(["user"], { enabled: !!isAdmin });
 	const navigate = useNavigate();
 
+	const stats: StatCard[] = [
+		{
+			labelId: "proxy-hosts.count",
+			count: hostReport?.proxy,
+			to: "/nginx/proxy",
+			icon: IconBolt,
+			color: "green",
+			section: PROXY_HOSTS,
+		},
+		{
+			labelId: "redirection-hosts.count",
+			count: hostReport?.redirection,
+			to: "/nginx/redirection",
+			icon: IconArrowsCross,
+			color: "yellow",
+			section: REDIRECTION_HOSTS,
+		},
+		{
+			labelId: "streams.count",
+			count: hostReport?.stream,
+			to: "/nginx/stream",
+			icon: IconDisc,
+			color: "blue",
+			section: STREAMS,
+		},
+		{
+			labelId: "dead-hosts.count",
+			count: hostReport?.dead,
+			to: "/nginx/404",
+			icon: IconBoltOff,
+			color: "red",
+			section: DEAD_HOSTS,
+		},
+		{
+			labelId: "certificates.count",
+			count: certificates?.length,
+			to: "/certificates",
+			icon: IconShield,
+			color: "indigo",
+			section: CERTIFICATES,
+		},
+		{
+			labelId: "tags.count",
+			count: tags?.length,
+			to: "/tags",
+			icon: IconTag,
+			color: "purple",
+		},
+	];
+
+	const quickActions: { labelObject: string; section?: Section; onClick: () => void }[] = [
+		{ labelObject: "proxy-host", section: PROXY_HOSTS, onClick: () => showProxyHostModal("new") },
+		{
+			labelObject: "redirection-host",
+			section: REDIRECTION_HOSTS,
+			onClick: () => showRedirectionHostModal("new"),
+		},
+		{ labelObject: "stream", section: STREAMS, onClick: () => showStreamModal("new") },
+		{ labelObject: "dead-host", section: DEAD_HOSTS, onClick: () => showDeadHostModal("new") },
+		{ labelObject: "tag", onClick: () => showTagModal("new") },
+	];
+
 	return (
-		<div>
-			<h2>
+		<div className="mt-4">
+			<h2 className="page-title mb-3">
 				<T id="dashboard" />
 			</h2>
-			<div className="row row-deck row-cards">
-				<div className="col-12 my-4">
-					<div className="row row-cards">
-						<HasPermission section={PROXY_HOSTS} permission={VIEW} hideError>
-							<div className="col-sm-6 col-lg-3">
+			<div className="row row-cards mb-3">
+				{stats.map((stat) => {
+					const Icon = stat.icon;
+					return (
+						<HasPermission
+							key={stat.to + stat.labelId}
+							section={stat.section}
+							permission={VIEW}
+							hideError
+						>
+							<div className="col-sm-6 col-lg-4 col-xl-2">
 								<a
-									href="/nginx/proxy"
+									href={stat.to}
 									className="card card-sm card-link card-link-pop"
 									onClick={(e) => {
 										e.preventDefault();
-										navigate("/nginx/proxy");
+										navigate(stat.to);
 									}}
 								>
 									<div className="card-body">
 										<div className="row align-items-center">
 											<div className="col-auto">
-												<span className="bg-green text-white avatar">
-													<IconBolt />
+												<span className={`bg-${stat.color} text-white avatar`}>
+													<Icon />
 												</span>
 											</div>
 											<div className="col">
 												<div className="font-weight-medium">
-													<T id="proxy-hosts.count" data={{ count: hostReport?.proxy }} />
+													<T id={stat.labelId} data={{ count: stat.count ?? 0 }} />
 												</div>
 											</div>
 										</div>
@@ -44,86 +152,77 @@ const Dashboard = () => {
 								</a>
 							</div>
 						</HasPermission>
-						<HasPermission section={REDIRECTION_HOSTS} permission={VIEW} hideError>
-							<div className="col-sm-6 col-lg-3">
-								<a
-									href="/nginx/redirection"
-									className="card card-sm card-link card-link-pop"
-									onClick={(e) => {
-										e.preventDefault();
-										navigate("/nginx/redirection");
-									}}
-								>
-									<div className="card-body">
-										<div className="row align-items-center">
-											<div className="col-auto">
-												<span className="bg-yellow text-white avatar">
-													<IconArrowsCross />
-												</span>
-											</div>
-											<div className="col">
-												<T
-													id="redirection-hosts.count"
-													data={{ count: hostReport?.redirection }}
-												/>
-											</div>
-										</div>
-									</div>
-								</a>
+					);
+				})}
+			</div>
+			<div className="row row-cards">
+				<div className="col-lg-5">
+					<div className="card">
+						<div className="card-header">
+							<h3 className="card-title">
+								<T id="dashboard.quick-actions" />
+							</h3>
+						</div>
+						<div className="card-body">
+							<div className="d-flex flex-wrap gap-2">
+								{quickActions.map((action) => (
+									<HasPermission
+										key={action.labelObject}
+										section={action.section}
+										permission={MANAGE}
+										hideError
+									>
+										<button type="button" className="btn btn-outline-primary btn-sm" onClick={action.onClick}>
+											<IconPlus size={16} className="me-1" />
+											<T id="object.add" tData={{ object: action.labelObject }} />
+										</button>
+									</HasPermission>
+								))}
 							</div>
-						</HasPermission>
-						<HasPermission section={STREAMS} permission={VIEW} hideError>
-							<div className="col-sm-6 col-lg-3">
-								<a
-									href="/nginx/stream"
-									className="card card-sm card-link card-link-pop"
-									onClick={(e) => {
-										e.preventDefault();
-										navigate("/nginx/stream");
-									}}
-								>
-									<div className="card-body">
-										<div className="row align-items-center">
-											<div className="col-auto">
-												<span className="bg-blue text-white avatar">
-													<IconDisc />
-												</span>
-											</div>
-											<div className="col">
-												<T id="streams.count" data={{ count: hostReport?.stream }} />
-											</div>
-										</div>
-									</div>
-								</a>
+							<div className="text-muted small mt-3">
+								<T id="dashboard.palette-hint" data={{ keys: "Ctrl/Cmd + K" }} />
 							</div>
-						</HasPermission>
-						<HasPermission section={DEAD_HOSTS} permission={VIEW} hideError>
-							<div className="col-sm-6 col-lg-3">
-								<a
-									href="/nginx/404"
-									className="card card-sm card-link card-link-pop"
-									onClick={(e) => {
-										e.preventDefault();
-										navigate("/nginx/404");
-									}}
-								>
-									<div className="card-body">
-										<div className="row align-items-center">
-											<div className="col-auto">
-												<span className="bg-red text-white avatar">
-													<IconBoltOff />
-												</span>
-											</div>
-											<div className="col">
-												<T id="dead-hosts.count" data={{ count: hostReport?.dead }} />
-											</div>
-										</div>
-									</div>
-								</a>
-							</div>
-						</HasPermission>
+						</div>
 					</div>
 				</div>
+				{isAdmin ? (
+					<HasPermission section={ADMIN} permission={VIEW} hideError>
+						<div className="col-lg-7">
+							<div className="card">
+								<div className="card-header">
+									<h3 className="card-title">
+										<T id="dashboard.recent-activity" />
+									</h3>
+									<div className="card-actions">
+										<button
+											type="button"
+											className="btn btn-link btn-sm p-0"
+											onClick={() => navigate("/audit-log")}
+										>
+											<T id="auditlogs" />
+										</button>
+									</div>
+								</div>
+								<div className="list-group list-group-flush">
+									{(auditLogs || []).slice(0, 8).map((event) => (
+										<div key={event.id} className="list-group-item d-flex align-items-center gap-3">
+											<GravatarFormatter
+												url={event.user ? event.user.avatar : ""}
+												name={event.user ? event.user.name : ""}
+											/>
+											<EventFormatter row={event} />
+										</div>
+									))}
+									{!auditLogs?.length ? (
+										<div className="list-group-item text-muted">
+											<T id="command-palette.no-results" />
+										</div>
+									) : null}
+								</div>
+							</div>
+						</div>
+					</HasPermission>
+				) : null}
 			</div>
 		</div>
 	);

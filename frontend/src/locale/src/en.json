@@ -137,6 +137,18 @@
 	"auto": {
 		"defaultMessage": "Auto"
 	},
+	"bulk.add-tags": {
+		"defaultMessage": "Add tags"
+	},
+	"bulk.edit-tags": {
+		"defaultMessage": "Edit Tags"
+	},
+	"bulk.remove-tags": {
+		"defaultMessage": "Remove tags"
+	},
+	"bulk.selected": {
+		"defaultMessage": "{count} {count, plural, one {item} other {items}} selected"
+	},
 	"cancel": {
 		"defaultMessage": "Cancel"
 	},
@@ -172,6 +184,9 @@
 	},
 	"certificates": {
 		"defaultMessage": "Certificates"
+	},
+	"certificates.count": {
+		"defaultMessage": "{count} {count, plural, one {Certificate} other {Certificates}}"
 	},
 	"certificates.custom": {
 		"defaultMessage": "Custom Certificate"
@@ -278,6 +293,9 @@
 	"column.expires": {
 		"defaultMessage": "Expires"
 	},
+	"column.icon": {
+		"defaultMessage": "Icon"
+	},
 	"column.http-code": {
 		"defaultMessage": "HTTP Code"
 	},
@@ -323,11 +341,35 @@
 	"column.tags": {
 		"defaultMessage": "Tags"
 	},
+	"command-palette.actions": {
+		"defaultMessage": "Actions"
+	},
+	"command-palette.no-results": {
+		"defaultMessage": "No results"
+	},
+	"command-palette.pages": {
+		"defaultMessage": "Pages"
+	},
+	"command-palette.placeholder": {
+		"defaultMessage": "Search hosts, tags, pages..."
+	},
+	"command-palette.toggle-theme": {
+		"defaultMessage": "Toggle light/dark theme"
+	},
 	"created-on": {
 		"defaultMessage": "Created: {date}"
 	},
 	"dashboard": {
 		"defaultMessage": "Dashboard"
+	},
+	"dashboard.palette-hint": {
+		"defaultMessage": "Tip: press {keys} to search hosts, tags and pages from anywhere"
+	},
+	"dashboard.quick-actions": {
+		"defaultMessage": "Quick Actions"
+	},
+	"dashboard.recent-activity": {
+		"defaultMessage": "Recent Activity"
 	},
 	"dead-host": {
 		"defaultMessage": "404 Host"
@@ -728,14 +770,29 @@
 	"tag": {
 		"defaultMessage": "Tag"
 	},
+	"tag-groups": {
+		"defaultMessage": "Tag Groups"
+	},
+	"tag-groups.empty": {
+		"defaultMessage": "Nothing to group yet"
+	},
+	"tag-groups.untagged": {
+		"defaultMessage": "Untagged"
+	},
 	"tags": {
 		"defaultMessage": "Tags"
+	},
+	"tags.count": {
+		"defaultMessage": "{count} {count, plural, one {Tag} other {Tags}}"
 	},
 	"tags.filter": {
 		"defaultMessage": "Filter by tags"
 	},
 	"tags.placeholder": {
 		"defaultMessage": "Select tags..."
+	},
+	"tags.unused": {
+		"defaultMessage": "Not used by any hosts"
 	},
 	"test": {
 		"defaultMessage": "Test"

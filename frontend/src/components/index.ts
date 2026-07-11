@@ -1,4 +1,5 @@
 export * from "./Button";
+export * from "./CommandPalette";
 export * from "./EmptyData";
 export * from "./ErrorNotFound";
 export * from "./Flag";
@@ -15,5 +16,6 @@ export * from "./SiteHeader";
 export * from "./SiteMenu";
 export * from "./Table";
 export * from "./TagFilter";
+export * from "./TagChip";
 export * from "./ThemeSwitcher";
 export * from "./Unhealthy";

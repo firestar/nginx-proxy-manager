@@ -23,6 +23,9 @@
 						"color": {
 							"$ref": "../../../components/tag-object.json#/properties/color"
 						},
+						"icon": {
+							"$ref": "../../../components/tag-object.json#/properties/icon"
+						},
 						"meta": {
 							"$ref": "../../../components/tag-object.json#/properties/meta"
 						}
@@ -47,6 +50,7 @@
 						"owner_user_id": 1,
 						"name": "Production",
 						"color": "#206bc4",
+						"icon": "server",
 						"meta": {}
 					},
 					"schema": {

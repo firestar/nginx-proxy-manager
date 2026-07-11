@@ -1,4 +1,5 @@
 export * from "./AccessListModal";
+export * from "./BulkTagModal";
 export * from "./ChangePasswordModal";
 export * from "./CustomCertificateModal";
 export * from "./DeadHostModal";

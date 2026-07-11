@@ -27,6 +27,12 @@
 			"maxLength": 32,
 			"example": "#206bc4"
 		},
+		"icon": {
+			"description": "Optional display icon name (Tabler icon)",
+			"type": "string",
+			"maxLength": 50,
+			"example": "server"
+		},
 		"meta": {
 			"type": "object",
 			"example": {}
