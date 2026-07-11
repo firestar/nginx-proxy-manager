@@ -7,6 +7,7 @@
 	"main": "index.js",
 	"type": "module",
 	"scripts": {
+		"test": "node --test test/",
 		"lint": "biome lint",
 		"prettier": "biome format --write .",
 		"validate-schema": "node validate-schema.js",
