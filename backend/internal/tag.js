@@ -69,7 +69,6 @@ const internalTag = {
 		await tagModel
 			.query()
 			.where({ id: data.id })
-			.patch(_.pick(data, ["name", "color", "meta"]));
 			.patch(_.pick(data, ["name", "color", "icon", "meta"]));
 		await internalAuditLog.add(access, {
 			action: "updated",
