@@ -7,7 +7,7 @@ import { Alert } from "react-bootstrap";
 import Modal from "react-bootstrap/Modal";
 import { type ApiKey, createApiKey, rerollApiKey } from "src/api/backend";
 import { Button } from "src/components";
-import { T } from "src/locale";
+import { intl, T } from "src/locale";
 import { validateString } from "src/modules/Validations";
 import { showObjectSuccess } from "src/notifications";
 
@@ -72,6 +72,18 @@ const SecretBody = ({ apiKey, onClose }: { apiKey: ApiKey; onClose: () => void }
 	);
 };
 
+// Scope model: per resource an access level; "hidden" means the key cannot
+// touch that resource at all. Mirrors the enum accepted by POST /api-keys.
+const SCOPE_RESOURCES = [
+	{ key: "proxy_hosts", labelId: "proxy-hosts" },
+	{ key: "redirection_hosts", labelId: "redirection-hosts" },
+	{ key: "dead_hosts", labelId: "dead-hosts" },
+	{ key: "streams", labelId: "streams" },
+	{ key: "access_lists", labelId: "access-lists" },
+	{ key: "certificates", labelId: "certificates" },
+];
+const SCOPE_LEVELS = ["hidden", "view", "manage"];
+
 const ApiKeyModal = EasyModal.create(({ visible, remove }: InnerModalProps) => {
 	const queryClient = useQueryClient();
 	const [errorMsg, setErrorMsg] = useState<ReactNode | null>(null);
@@ -80,10 +92,21 @@ const ApiKeyModal = EasyModal.create(({ visible, remove }: InnerModalProps) => {
 
 	const onSubmit = async (values: any, { setSubmitting }: any) => {
 		if (isSubmitting) return;
+		const scopes = values.fullAccess
+			? undefined
+			: SCOPE_RESOURCES.filter((r) => values.scopes[r.key] !== "hidden").map(
+					(r) => `${r.key}:${values.scopes[r.key]}`,
+				);
+		// An empty scopes array would create an unrestricted key; force a choice.
+		if (scopes && !scopes.length) {
+			setErrorMsg(<T id="apikey.scopes-required" />);
+			setSubmitting(false);
+			return;
+		}
 		setIsSubmitting(true);
 		setErrorMsg(null);
 		try {
-			const result = await createApiKey({ name: values.name });
+			const result = await createApiKey({ name: values.name, scopes });
 			queryClient.invalidateQueries({ queryKey: ["api-keys"] });
 			showObjectSuccess("api-key", "saved");
 			setCreated(result);
@@ -99,8 +122,15 @@ const ApiKeyModal = EasyModal.create(({ visible, remove }: InnerModalProps) => {
 			{created ? (
 				<SecretBody apiKey={created} onClose={remove} />
 			) : (
-				<Formik initialValues={{ name: "" }} onSubmit={onSubmit}>
-					{() => (
+				<Formik
+					initialValues={{
+						name: "",
+						fullAccess: true,
+						scopes: Object.fromEntries(SCOPE_RESOURCES.map((r) => [r.key, "hidden"])),
+					}}
+					onSubmit={onSubmit}
+				>
+					{({ values }) => (
 						<Form>
 							<Modal.Header closeButton>
 								<Modal.Title>
@@ -134,6 +164,50 @@ const ApiKeyModal = EasyModal.create(({ visible, remove }: InnerModalProps) => {
 										</div>
 									)}
 								</Field>
+								<div className="mb-3">
+									<label className="form-check form-switch mb-0">
+										<Field type="checkbox" name="fullAccess" className="form-check-input" />
+										<span className="form-check-label">
+											<T id="apikey.full-access" />
+										</span>
+									</label>
+									<div className="form-hint">
+										<T id="apikey.full-access.hint" />
+									</div>
+								</div>
+								{!values.fullAccess ? (
+									<div className="mb-3">
+										<label className="form-label mb-1">
+											<T id="apikey.scopes" />
+										</label>
+										<div className="form-hint mb-2">
+											<T id="apikey.scopes.hint" />
+										</div>
+										{SCOPE_RESOURCES.map((resource) => (
+											<div className="row g-2 align-items-center mb-1" key={resource.key}>
+												<div className="col-6">
+													<label className="form-label mb-0" htmlFor={`scope-${resource.key}`}>
+														<T id={resource.labelId} />
+													</label>
+												</div>
+												<div className="col-6">
+													<Field
+														as="select"
+														id={`scope-${resource.key}`}
+														name={`scopes.${resource.key}`}
+														className="form-select form-select-sm"
+													>
+														{SCOPE_LEVELS.map((level) => (
+															<option key={level} value={level}>
+																{intl.formatMessage({ id: `permissions.${level}` })}
+															</option>
+														))}
+													</Field>
+												</div>
+											</div>
+										))}
+									</div>
+								) : null}
 							</Modal.Body>
 							<Modal.Footer>
 								<Button data-bs-dismiss="modal" onClick={remove} disabled={isSubmitting}>

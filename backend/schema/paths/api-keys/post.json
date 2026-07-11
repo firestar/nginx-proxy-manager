@@ -23,11 +23,15 @@
 							"minLength": 1,
 							"maxLength": 100,
 							"example": "MCP Server"
+						},
+						"scopes": {
+							"$ref": "../../components/api-key-scopes.json"
 						}
 					}
 				},
 				"example": {
-					"name": "MCP Server"
+					"name": "MCP Server",
+					"scopes": ["proxy_hosts:manage", "certificates:view"]
 				}
 			}
 		}
@@ -45,6 +49,7 @@
 								"modified_on": "2026-07-11T12:00:00.000Z",
 								"user_id": 1,
 								"name": "MCP Server",
+								"scopes": ["proxy_hosts:manage", "certificates:view"],
 								"last_used_on": null,
 								"key": "npm_yE5rE9Yo0nOFrknW9DBB1WNMdiTBAWyC8IFB1BLzUwM"
 							}

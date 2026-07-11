@@ -1,7 +1,10 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { npmRequest } from "../npm-client.js";
-import { registerTool, splitId } from "./helpers.js";
+import { scopedRegistrar, splitId } from "./helpers.js";
+
+// Gate every tool in this file behind the key's dead_hosts scope.
+const registerTool = scopedRegistrar("dead_hosts");
 
 const BASE = "/nginx/dead-hosts";
 

@@ -25,6 +25,29 @@ export default function Table({ data, isFetching, onReroll, onRevoke, onNew }: P
 					return <ValueWithDateFormatter value={value.name} createdOn={value.createdOn} />;
 				},
 			}),
+			columnHelper.accessor((row: any) => row.scopes, {
+				id: "scopes",
+				header: intl.formatMessage({ id: "apikey.scopes" }),
+				cell: (info: any) => {
+					const value = info.getValue();
+					if (!value?.length) {
+						return (
+							<span className="badge bg-cyan-lt">
+								<T id="apikey.full-access" />
+							</span>
+						);
+					}
+					return (
+						<>
+							{value.map((scope: string) => (
+								<span className="badge bg-secondary-lt me-1" key={scope}>
+									{scope}
+								</span>
+							))}
+						</>
+					);
+				},
+			}),
 			columnHelper.accessor((row: any) => row.lastUsedOn, {
 				id: "lastUsedOn",
 				header: intl.formatMessage({ id: "column.last-used" }),

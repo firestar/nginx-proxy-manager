@@ -160,3 +160,20 @@ export async function verifyConnection(): Promise<void> {
 	}
 	await getToken(true);
 }
+
+/**
+ * Fetch the scopes of the API key used for auth, or null when unrestricted
+ * (credential auth, unscoped key, or an NPM without the introspection
+ * endpoint). Scopes only gate tool registration — NPM enforces server-side.
+ */
+export async function fetchKeyScopes(): Promise<string[] | null> {
+	if (!getConfig().apiKey) {
+		return null;
+	}
+	try {
+		const row = (await npmRequest("GET", "/api-keys/current")) as { scopes?: string[] | null };
+		return Array.isArray(row.scopes) && row.scopes.length ? row.scopes : null;
+	} catch {
+		return null;
+	}
+}

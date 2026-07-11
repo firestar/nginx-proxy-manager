@@ -3,7 +3,8 @@ import express, { type Request, type Response } from "express";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { getConfig } from "./config.js";
-import { verifyConnection } from "./npm-client.js";
+import { fetchKeyScopes, verifyConnection } from "./npm-client.js";
+import { setKeyScopes } from "./scopes.js";
 import { createMcpServer } from "./server.js";
 
 async function main(): Promise<void> {
@@ -25,6 +26,14 @@ async function main(): Promise<void> {
 			}`,
 		);
 		process.exit(1);
+	}
+	// Scoped keys shrink the tool surface: out-of-scope tools are never
+	// registered, so MCP clients don't see them. NPM still enforces scopes
+	// on every request server-side.
+	const scopes = await fetchKeyScopes();
+	setKeyScopes(scopes);
+	if (scopes) {
+		console.error(`[npm-mcp] API key is scoped (${scopes.join(", ")}); out-of-scope tools are disabled`);
 	}
 
 	const app = express();

@@ -1,0 +1,23 @@
+{
+	"description": "Scopes restricting what the key can do. Each is \"resource:level\". Null or empty means the key is unrestricted and acts with the owning user's full permissions",
+	"type": ["array", "null"],
+	"uniqueItems": true,
+	"items": {
+		"type": "string",
+		"enum": [
+			"proxy_hosts:view",
+			"proxy_hosts:manage",
+			"redirection_hosts:view",
+			"redirection_hosts:manage",
+			"dead_hosts:view",
+			"dead_hosts:manage",
+			"streams:view",
+			"streams:manage",
+			"access_lists:view",
+			"access_lists:manage",
+			"certificates:view",
+			"certificates:manage"
+		]
+	},
+	"example": ["proxy_hosts:manage", "certificates:view"]
+}

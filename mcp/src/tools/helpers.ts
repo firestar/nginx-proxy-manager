@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ZodRawShape } from "zod";
 import { NpmApiError } from "../npm-client.js";
+import { getKeyScopes, scopeAllows } from "../scopes.js";
 
 export interface ToolConfig {
 	title: string;
@@ -10,6 +11,12 @@ export interface ToolConfig {
 	readOnly?: boolean;
 	/** True for tools that delete or otherwise irreversibly change data. */
 	destructive?: boolean;
+	/**
+	 * Scope resource this tool belongs to (e.g. "proxy_hosts"). Read-only
+	 * tools need `resource:view`, everything else `resource:manage`. Tools
+	 * without a resource are always registered.
+	 */
+	resource?: string;
 }
 
 type Handler = (args: Record<string, unknown>) => Promise<unknown> | unknown;
@@ -30,6 +37,14 @@ export function registerTool(
 	config: ToolConfig,
 	handler: Handler,
 ): void {
+	// Skip tools the API key's scopes don't allow — the model never sees them.
+	// The NPM backend still enforces scopes server-side on every request.
+	if (config.resource) {
+		const required = `${config.resource}:${config.readOnly ? "view" : "manage"}`;
+		if (!scopeAllows(getKeyScopes(), required)) {
+			return;
+		}
+	}
 	server.registerTool(
 		name,
 		{
@@ -66,6 +81,14 @@ export function registerTool(
 			// biome-ignore lint/suspicious/noExplicitAny: SDK handler signature bridge
 		}) as any,
 	);
+}
+/**
+ * A registerTool bound to one scope resource, so tool files can gate a whole
+ * group without repeating the resource on every call.
+ */
+export function scopedRegistrar(resource: string) {
+	return (server: McpServer, name: string, config: ToolConfig, handler: Handler): void =>
+		registerTool(server, name, { ...config, resource }, handler);
 }
 
 /** Pull `id` out of an args object and return the remaining fields as a body. */

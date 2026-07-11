@@ -32,6 +32,7 @@ const internalApiKey = {
 	 * @param   {Access}  access
 	 * @param   {Object}  data
 	 * @param   {String}  data.name
+	 * @param   {Array}   [data.scopes]  "resource:level" strings; omitted/empty = unrestricted
 	 * @returns {Promise}
 	 */
 	create: async (access, data) => {
@@ -43,6 +44,7 @@ const internalApiKey = {
 			user_id: access.token.getUserId(0),
 			name: data.name,
 			secret_hash: hashSecret(secret),
+			scopes: data.scopes?.length ? [...new Set(data.scopes)] : null,
 		});
 
 		await internalAuditLog.add(access, {
@@ -151,6 +153,32 @@ const internalApiKey = {
 			.andWhere("user_id", access.token.getUserId(0))
 			.orderBy("created_on", "DESC")
 			.then(utils.omitRows(omissions()));
+	},
+
+	/**
+	 * Introspection for the key used to authenticate this request, so a
+	 * client (e.g. the MCP server) can discover its own scopes. Only
+	 * meaningful when the request was authenticated with an API key.
+	 *
+	 * @param   {Access}  access
+	 * @returns {Promise}
+	 */
+	getCurrent: async (access) => {
+		if (access.token.get("iss") !== "api-key") {
+			throw new errs.PermissionError("Not authenticated with an API key");
+		}
+
+		const row = await apiKeyModel
+			.query()
+			.where("id", access.token.get("attrs").api_key_id)
+			.andWhere("is_deleted", 0)
+			.first()
+			.then(utils.omitRow(omissions()));
+
+		if (!row?.id) {
+			throw new errs.ItemNotFoundError("current");
+		}
+		return row;
 	},
 };
 

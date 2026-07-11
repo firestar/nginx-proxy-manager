@@ -51,6 +51,8 @@ export interface ApiKey {
 	userId: number;
 	name: string;
 	lastUsedOn: string | null;
+	/** "resource:level" strings. Null/absent = unrestricted (acts as the owning user). */
+	scopes?: string[] | null;
 	/** Full secret. Only present in create/reroll responses, never again. */
 	key?: string;
 }

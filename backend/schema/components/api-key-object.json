@@ -21,6 +21,9 @@
 			"maxLength": 100,
 			"example": "MCP Server"
 		},
+		"scopes": {
+			"$ref": "./api-key-scopes.json"
+		},
 		"last_used_on": {
 			"description": "When the key last authenticated a request, null if never used",
 			"type": ["string", "null"],

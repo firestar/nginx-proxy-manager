@@ -54,6 +54,34 @@ router
 	});
 
 /**
+ * Introspection for the key authenticating this request. Registered before
+ * /:key_id so "current" is not swallowed by the id route.
+ *
+ * /api/api-keys/current
+ */
+router
+	.route("/current")
+	.options((_, res) => {
+		res.sendStatus(204);
+	})
+	.all(jwtdecode())
+
+	/**
+	 * GET /api/api-keys/current
+	 *
+	 * Returns the key row (never the secret) including scopes, so a client
+	 * can discover what it is allowed to do.
+	 */
+	.get(async (req, res, next) => {
+		try {
+			const result = await internalApiKey.getCurrent(res.locals.access);
+			res.status(200).send(result);
+		} catch (err) {
+			debug(logger, `${req.method.toUpperCase()} ${req.path}: ${err}`);
+			next(err);
+		}
+	});
+/**
  * Specific API key
  *
  * /api/api-keys/123

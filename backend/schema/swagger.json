@@ -87,6 +87,11 @@
 				"$ref": "./paths/api-keys/post.json"
 			}
 		},
+		"/api-keys/current": {
+			"get": {
+				"$ref": "./paths/api-keys/current/get.json"
+			}
+		},
 		"/api-keys/{keyID}": {
 			"delete": {
 				"$ref": "./paths/api-keys/keyID/delete.json"

@@ -39,6 +39,10 @@ class ApiKey extends Model {
 		return "api_key";
 	}
 
+	static get jsonAttributes() {
+		return ["scopes"];
+	}
+
 	static get relationMappings() {
 		return {
 			user: {

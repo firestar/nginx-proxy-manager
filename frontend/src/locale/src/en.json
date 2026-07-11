@@ -140,6 +140,12 @@
 	"apikey.description": {
 		"defaultMessage": "Keys are used as Bearer tokens to access the API, for example from the MCP server"
 	},
+	"apikey.full-access": {
+		"defaultMessage": "Full access"
+	},
+	"apikey.full-access.hint": {
+		"defaultMessage": "The key can do everything your user can do"
+	},
 	"apikey.never-used": {
 		"defaultMessage": "Never used"
 	},
@@ -154,6 +160,15 @@
 	},
 	"apikey.revoke.content": {
 		"defaultMessage": "Are you sure you want to revoke this API key? Anything still using it will lose access immediately."
+	},
+	"apikey.scopes": {
+		"defaultMessage": "Scopes"
+	},
+	"apikey.scopes-required": {
+		"defaultMessage": "Select at least one scope, or grant full access"
+	},
+	"apikey.scopes.hint": {
+		"defaultMessage": "Limit what this key can access. Hidden resources are denied entirely."
 	},
 	"apikey.secret-warning": {
 		"defaultMessage": "Copy this key now — it will not be shown again."

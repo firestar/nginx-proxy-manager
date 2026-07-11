@@ -36,6 +36,7 @@ export default function (tokenString) {
 	let userRoles = [];
 	let permissions = {};
 	let apiKeyTokenData = null;
+	let apiKeyScopes = null;
 
 	/**
 	 * API keys short-circuit JWT verification: look the key up by hash and
@@ -67,9 +68,13 @@ export default function (tokenString) {
 			.patch({ last_used_on: now() })
 			.catch((err) => logger.error(err.message));
 
+		// Scoped keys act as the owning user but with capped permissions;
+		// NULL/empty scopes means the key is unrestricted.
+		apiKeyScopes = Array.isArray(row.scopes) && row.scopes.length ? row.scopes : null;
+
 		apiKeyTokenData = {
 			iss: "api-key",
-			attrs: { id: row.user_id },
+			attrs: { id: row.user_id, api_key_id: row.id },
 			scope: ["user"],
 		};
 		Token.set("iss", apiKeyTokenData.iss);
@@ -245,6 +250,47 @@ export default function (tokenString) {
 		return schema;
 	};
 
+	/**
+	 * Roles and permissions the current token actually gets. For unrestricted
+	 * tokens this is the user's own roles/permissions. For a scoped API key,
+	 * each resource permission is capped at the level granted by the key's
+	 * scopes (absent scope = hidden), and the admin role is dropped so a
+	 * scoped key can never take admin-only actions.
+	 *
+	 * @returns {Object} { roles: Array, permissions: Object }
+	 */
+	this.effectiveAccess = () => {
+		if (!apiKeyScopes) {
+			return { roles: userRoles, permissions };
+		}
+
+		const levels = ["hidden", "view", "manage"];
+		const granted = {};
+		_.forEach(apiKeyScopes, (scope) => {
+			const [resource, level] = scope.split(":");
+			const idx = levels.indexOf(level);
+			if (idx > 0) {
+				granted[resource] = Math.max(granted[resource] || 0, idx);
+			}
+		});
+
+		// Admins have no per-resource permission rows; their base is manage.
+		const isAdmin = _.indexOf(userRoles, "admin") !== -1;
+		const capped = { visibility: permissions.visibility };
+		for (const resource of [
+			"proxy_hosts",
+			"redirection_hosts",
+			"dead_hosts",
+			"streams",
+			"access_lists",
+			"certificates",
+		]) {
+			const base = isAdmin ? 2 : Math.max(levels.indexOf(permissions[resource]), 0);
+			capped[resource] = levels[Math.min(base, granted[resource] || 0)];
+		}
+
+		return { roles: _.without(userRoles, "admin"), permissions: capped };
+	};
 	// here:
 
 	return {
@@ -283,18 +329,19 @@ export default function (tokenString) {
 				await this.init();
 				const objectSchema = await this.getObjectSchema(permission);
 
+				const eff = this.effectiveAccess();
 				const dataSchema = {
 					[permission]: {
 						data: data,
 						scope: Token.get("scope"),
-						roles: userRoles,
-						permission_visibility: permissions.visibility,
-						permission_proxy_hosts: permissions.proxy_hosts,
-						permission_redirection_hosts: permissions.redirection_hosts,
-						permission_dead_hosts: permissions.dead_hosts,
-						permission_streams: permissions.streams,
-						permission_access_lists: permissions.access_lists,
-						permission_certificates: permissions.certificates,
+						roles: eff.roles,
+						permission_visibility: eff.permissions.visibility,
+						permission_proxy_hosts: eff.permissions.proxy_hosts,
+						permission_redirection_hosts: eff.permissions.redirection_hosts,
+						permission_dead_hosts: eff.permissions.dead_hosts,
+						permission_streams: eff.permissions.streams,
+						permission_access_lists: eff.permissions.access_lists,
+						permission_certificates: eff.permissions.certificates,
 					},
 				};
 
@@ -325,7 +372,7 @@ export default function (tokenString) {
 				err.permission = permission;
 				err.permission_data = data;
 				logger.error(permission, data, err.message);
-				throw errs.PermissionError("Permission Denied", err);
+				throw new errs.PermissionError("Permission Denied", err);
 			}
 		},
 	};
