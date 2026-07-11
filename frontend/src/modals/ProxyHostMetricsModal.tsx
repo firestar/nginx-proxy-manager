@@ -1,5 +1,5 @@
 import EasyModal, { type InnerModalProps } from "ez-modal-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Alert, Modal } from "react-bootstrap";
 import ReactApexChart from "react-apexcharts";
 import type { ApexOptions } from "apexcharts";
@@ -22,6 +22,9 @@ function formatBytes(bytes: number): string {
 	return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${units[i]}`;
 }
 
+// Buckets arrive as UTC "YYYY-MM-DD HH:MM:SS" strings
+const bucketToEpoch = (bucket: string): number => Date.parse(`${bucket.replace(" ", "T")}Z`);
+
 const showProxyHostMetricsModal = (id: number) => {
 	EasyModal.show(ProxyHostMetricsModal, { id });
 };
@@ -34,41 +37,69 @@ const ProxyHostMetricsModal = EasyModal.create(({ id, visible, remove }: Props) 
 	const [range, setRange] = useState<MetricsRange>("24h");
 	const { data, isLoading, error } = useProxyHostMetrics(id, range);
 
-	const buckets = data?.buckets ?? [];
+	const buckets = data?.buckets;
 	const totals = data?.totals;
-	const labels = buckets.map((b) => b.bucket);
-	const isEmpty = !isLoading && !error && buckets.length === 0;
+	const isEmpty = !isLoading && !error && (buckets?.length ?? 0) === 0;
 
-	const areaChartOptions: ApexOptions = {
-		chart: { type: "area", toolbar: { show: false }, animations: { enabled: false } },
-		xaxis: { categories: labels, labels: { show: false } },
-		stroke: { curve: "smooth", width: 2 },
-		dataLabels: { enabled: false },
-		tooltip: { x: { format: "dd MMM HH:mm" } },
-		grid: { strokeDashArray: 4 },
-	};
+	const requestsSeries = useMemo(
+		() => [{ name: "Requests", data: (buckets ?? []).map((b) => ({ x: bucketToEpoch(b.bucket), y: b.requests })) }],
+		[buckets],
+	);
+	const bandwidthSeries = useMemo(
+		() => [{ name: "Bandwidth", data: (buckets ?? []).map((b) => ({ x: bucketToEpoch(b.bucket), y: b.bytesSent })) }],
+		[buckets],
+	);
+	const statusSeries = useMemo(
+		() =>
+			(["status2xx", "status3xx", "status4xx", "status5xx"] as const).map((key, i) => ({
+				name: ["2xx", "3xx", "4xx", "5xx"][i],
+				data: (buckets ?? []).map((b) => ({ x: bucketToEpoch(b.bucket), y: b[key] })),
+			})),
+		[buckets],
+	);
 
-	const requestsOptions: ApexOptions = {
-		...areaChartOptions,
-		colors: ["#2fb344"],
-		yaxis: { labels: { formatter: (v) => Math.round(v).toString() } },
-	};
+	const areaChartOptions: ApexOptions = useMemo(
+		() => ({
+			chart: { type: "area", toolbar: { show: false }, animations: { enabled: false } },
+			xaxis: { type: "datetime", labels: { datetimeUTC: false } },
+			stroke: { curve: "smooth", width: 2 },
+			dataLabels: { enabled: false },
+			tooltip: { x: { format: "dd MMM HH:mm" } },
+			grid: { strokeDashArray: 4 },
+		}),
+		[],
+	);
 
-	const bandwidthOptions: ApexOptions = {
-		...areaChartOptions,
-		colors: ["#4299e1"],
-		yaxis: { labels: { formatter: formatBytes } },
-		tooltip: { y: { formatter: formatBytes } },
-	};
+	const requestsOptions: ApexOptions = useMemo(
+		() => ({
+			...areaChartOptions,
+			colors: ["#2fb344"],
+			yaxis: { labels: { formatter: (v) => Math.round(v).toString() } },
+		}),
+		[areaChartOptions],
+	);
 
-	const statusBarOptions: ApexOptions = {
-		chart: { type: "bar", stacked: true, toolbar: { show: false }, animations: { enabled: false } },
-		xaxis: { categories: labels, labels: { show: false } },
-		dataLabels: { enabled: false },
-		colors: ["#2fb344", "#f59f00", "#e53e3e", "#7c3aed"],
-		grid: { strokeDashArray: 4 },
-		tooltip: { x: { format: "dd MMM HH:mm" } },
-	};
+	const bandwidthOptions: ApexOptions = useMemo(
+		() => ({
+			...areaChartOptions,
+			colors: ["#4299e1"],
+			yaxis: { labels: { formatter: formatBytes } },
+			tooltip: { x: { format: "dd MMM HH:mm" }, y: { formatter: formatBytes } },
+		}),
+		[areaChartOptions],
+	);
+
+	const statusBarOptions: ApexOptions = useMemo(
+		() => ({
+			chart: { type: "bar", stacked: true, toolbar: { show: false }, animations: { enabled: false } },
+			xaxis: { type: "datetime", labels: { datetimeUTC: false } },
+			dataLabels: { enabled: false },
+			colors: ["#2fb344", "#f59f00", "#e53e3e", "#7c3aed"],
+			grid: { strokeDashArray: 4 },
+			tooltip: { x: { format: "dd MMM HH:mm" } },
+		}),
+		[],
+	);
 
 	return (
 		<Modal show={visible} onHide={remove} size="lg">
@@ -113,41 +144,21 @@ const ProxyHostMetricsModal = EasyModal.create(({ id, visible, remove }: Props) 
 							<h6 className="text-muted mb-2">
 								<T id="metrics.requests" />
 							</h6>
-							<ReactApexChart
-								type="area"
-								height={160}
-								options={requestsOptions}
-								series={[{ name: "Requests", data: buckets.map((b) => b.requests) }]}
-							/>
+							<ReactApexChart type="area" height={160} options={requestsOptions} series={requestsSeries} />
 						</div>
 
 						<div className="mb-4">
 							<h6 className="text-muted mb-2">
 								<T id="metrics.bandwidth" />
 							</h6>
-							<ReactApexChart
-								type="area"
-								height={160}
-								options={bandwidthOptions}
-								series={[{ name: "Bandwidth", data: buckets.map((b) => b.bytesSent) }]}
-							/>
+							<ReactApexChart type="area" height={160} options={bandwidthOptions} series={bandwidthSeries} />
 						</div>
 
 						<div className="mb-4">
 							<h6 className="text-muted mb-2">
 								<T id="metrics.status-codes" />
 							</h6>
-							<ReactApexChart
-								type="bar"
-								height={160}
-								options={statusBarOptions}
-								series={[
-									{ name: "2xx", data: buckets.map((b) => b.status2xx) },
-									{ name: "3xx", data: buckets.map((b) => b.status3xx) },
-									{ name: "4xx", data: buckets.map((b) => b.status4xx) },
-									{ name: "5xx", data: buckets.map((b) => b.status5xx) },
-								]}
-							/>
+							<ReactApexChart type="bar" height={160} options={statusBarOptions} series={statusSeries} />
 						</div>
 
 						{totals && (
