@@ -37,6 +37,9 @@ async function parseBody(res: Response): Promise<unknown> {
 
 async function login(): Promise<CachedToken> {
 	const { baseUrl, identity, secret } = getConfig();
+	if (!identity || !secret) {
+		throw new Error("NPM_IDENTITY and NPM_SECRET must be set when NPM_API_KEY is not configured.");
+	}
 	const res = await fetch(`${baseUrl}/tokens`, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
@@ -65,6 +68,11 @@ async function login(): Promise<CachedToken> {
 }
 
 async function getToken(forceRefresh = false): Promise<string> {
+	// API keys are long-lived bearer values — no login or refresh cycle.
+	const { apiKey } = getConfig();
+	if (apiKey) {
+		return apiKey;
+	}
 	if (!forceRefresh && cachedToken && cachedToken.expires - Date.now() > EXPIRY_SKEW_MS) {
 		return cachedToken.token;
 	}
@@ -118,11 +126,19 @@ export async function npmRequest(
 	let res = await doRequest(method, path, options, token);
 
 	if (res.status === 401) {
+		const { apiKey } = getConfig();
+		if (apiKey) {
+			// A rejected key won't recover by retrying.
+			throw new NpmApiError(
+				"NPM rejected the API key (HTTP 401). It may have been revoked or rerolled.",
+				res.status,
+				await parseBody(res),
+			);
+		}
 		// Token may have been revoked/expired early — force a fresh login and retry once.
 		token = await getToken(true);
 		res = await doRequest(method, path, options, token);
 	}
-
 	const body = await parseBody(res);
 	if (!res.ok) {
 		const message =
@@ -137,5 +153,10 @@ export async function npmRequest(
 
 /** Verify credentials are valid by attempting a login. Throws on failure. */
 export async function verifyConnection(): Promise<void> {
+	if (getConfig().apiKey) {
+		// No login step with an API key — probe an authenticated endpoint instead.
+		await npmRequest("GET", "/users/me");
+		return;
+	}
 	await getToken(true);
 }

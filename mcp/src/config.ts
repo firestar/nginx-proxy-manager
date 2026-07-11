@@ -38,8 +38,10 @@ function loadDotEnv(): void {
 
 export interface Config {
 	baseUrl: string;
-	identity: string;
-	secret: string;
+	/** NPM API key (`npm_...`). When set, identity/secret are unused. */
+	apiKey: string | null;
+	identity: string | null;
+	secret: string | null;
 	port: number;
 	host: string;
 	authToken: string | null;
@@ -63,10 +65,14 @@ export function getConfig(): Config {
 	loadDotEnv();
 	// Normalise the base URL: strip a single trailing slash so path joins are clean.
 	const baseUrl = required("NPM_BASE_URL").replace(/\/+$/, "");
+	// An API key (created in the NPM UI) takes precedence over credentials;
+	// only when no key is set do identity/secret become required.
+	const apiKey = process.env.NPM_API_KEY || null;
 	cached = {
 		baseUrl,
-		identity: required("NPM_IDENTITY"),
-		secret: required("NPM_SECRET"),
+		apiKey,
+		identity: apiKey ? process.env.NPM_IDENTITY || null : required("NPM_IDENTITY"),
+		secret: apiKey ? process.env.NPM_SECRET || null : required("NPM_SECRET"),
 		port: Number.parseInt(process.env.MCP_PORT ?? "3001", 10),
 		host: process.env.MCP_HOST ?? "127.0.0.1",
 		authToken: process.env.MCP_AUTH_TOKEN ? process.env.MCP_AUTH_TOKEN : null,

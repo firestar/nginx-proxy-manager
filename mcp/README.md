@@ -9,14 +9,15 @@ It talks to NPM's existing REST API — it does **not** modify NPM itself. Run i
 alongside your NPM instance and point it at NPM's API.
 
 - **Transport:** Streamable HTTP (`POST/GET/DELETE /mcp`)
-- **Auth to NPM:** logs in with credentials from env vars and auto-refreshes the JWT
+- **Auth to NPM:** an NPM API key (recommended), or login credentials with JWT auto-refresh
 - **Language:** TypeScript, official `@modelcontextprotocol/sdk`
 
 ## Requirements
 
 - Node.js 18+
-- A reachable NPM instance and a user account **without 2FA** (credential login
-  cannot answer a 2FA challenge)
+- A reachable NPM instance, plus either an API key (created in the NPM UI under
+  **API Keys**) or a user account **without 2FA** (credential login cannot answer
+  a 2FA challenge). API keys work regardless of 2FA.
 
 ## Setup
 
@@ -31,14 +32,18 @@ npm start
 ### Configuration (`.env` or real env vars)
 
 | Variable | Required | Default | Description |
-|---|---|---|---|
 | `NPM_BASE_URL` | yes | — | NPM API base URL, including `/api`. Usually the admin UI host on port 81, e.g. `http://localhost:81/api` |
-| `NPM_IDENTITY` | yes | — | NPM login email (account without 2FA) |
-| `NPM_SECRET` | yes | — | NPM login password |
+| `NPM_API_KEY` | no* | — | NPM API key (`npm_...`), created in the NPM UI under **API Keys**. Recommended; when set, identity/secret are ignored |
+| `NPM_IDENTITY` | no* | — | NPM login email (account without 2FA) |
+| `NPM_SECRET` | no* | — | NPM login password |
 | `MCP_PORT` | no | `3001` | Port the MCP HTTP endpoint listens on |
 | `MCP_HOST` | no | `127.0.0.1` | Bind interface. Keep local unless you also set `MCP_AUTH_TOKEN` |
 | `MCP_AUTH_TOKEN` | no | _(none)_ | If set, clients must send `Authorization: Bearer <token>` to reach `/mcp` |
 | `NPM_TLS_REJECT_UNAUTHORIZED` | no | `true` | Set to `false` to allow self-signed certs when `NPM_BASE_URL` is https |
+
+\* Either `NPM_API_KEY`, or both `NPM_IDENTITY` and `NPM_SECRET`, must be set.
+API keys can be revoked or rerolled from the NPM UI at any time without
+restarting NPM — reroll invalidates the old secret immediately.
 
 On startup the server verifies it can authenticate with NPM and exits with a clear
 message if it can't.
@@ -124,8 +129,7 @@ services:
     restart: unless-stopped
     environment:
       NPM_BASE_URL: 'http://app:81/api'
-      NPM_IDENTITY: 'admin@example.com'
-      NPM_SECRET: 'changeme'
+      NPM_API_KEY: 'npm_your-api-key-here'
       MCP_HOST: '0.0.0.0'
       MCP_PORT: '3001'
       MCP_AUTH_TOKEN: 'set-a-strong-token'
@@ -146,6 +150,8 @@ npm run dev     # tsc --watch
 ## Security notes
 
 - The server holds NPM admin credentials — treat its host/env as sensitive.
+  Prefer an API key over login credentials: it can be revoked or rerolled from
+  the NPM UI the moment you suspect a leak.
 - Bind to `127.0.0.1` for local use, or set `MCP_AUTH_TOKEN` and put it behind TLS
   if exposed on a network.
 - Delete tools are irreversible; the tools advertise `destructiveHint` so clients

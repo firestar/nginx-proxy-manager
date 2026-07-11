@@ -1,0 +1,7 @@
+{
+	"type": "array",
+	"description": "API Keys list",
+	"items": {
+		"$ref": "./api-key-object.json"
+	}
+}

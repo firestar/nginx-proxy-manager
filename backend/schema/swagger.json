@@ -21,6 +21,10 @@
 			"description": "Endpoints that do not require authentication"
 		},
 		{
+			"name": "api-keys",
+			"description": "Endpoints for managing API keys"
+		},
+		{
 			"name": "audit-log",
 			"description": "Endpoints related to Audit Logs"
 		},
@@ -73,6 +77,24 @@
 		"/": {
 			"get": {
 				"$ref": "./paths/get.json"
+			}
+		},
+		"/api-keys": {
+			"get": {
+				"$ref": "./paths/api-keys/get.json"
+			},
+			"post": {
+				"$ref": "./paths/api-keys/post.json"
+			}
+		},
+		"/api-keys/{keyID}": {
+			"delete": {
+				"$ref": "./paths/api-keys/keyID/delete.json"
+			}
+		},
+		"/api-keys/{keyID}/reroll": {
+			"post": {
+				"$ref": "./paths/api-keys/keyID/reroll/post.json"
 			}
 		},
 		"/audit-log": {

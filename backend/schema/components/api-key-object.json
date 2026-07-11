@@ -1,0 +1,35 @@
+{
+	"type": "object",
+	"description": "API Key object",
+	"required": ["id", "created_on", "modified_on", "user_id", "name"],
+	"properties": {
+		"id": {
+			"$ref": "../common.json#/properties/id"
+		},
+		"created_on": {
+			"$ref": "../common.json#/properties/created_on"
+		},
+		"modified_on": {
+			"$ref": "../common.json#/properties/modified_on"
+		},
+		"user_id": {
+			"$ref": "../common.json#/properties/user_id"
+		},
+		"name": {
+			"type": "string",
+			"minLength": 1,
+			"maxLength": 100,
+			"example": "MCP Server"
+		},
+		"last_used_on": {
+			"description": "When the key last authenticated a request, null if never used",
+			"type": ["string", "null"],
+			"example": "2026-07-11T12:00:00.000Z"
+		},
+		"key": {
+			"description": "The full secret key. Only returned once, when the key is created or rerolled",
+			"type": "string",
+			"example": "npm_yE5rE9Yo0nOFrknW9DBB1WNMdiTBAWyC8IFB1BLzUwM"
+		}
+	}
+}

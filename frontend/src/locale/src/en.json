@@ -131,6 +131,33 @@
 	"action.view-details": {
 		"defaultMessage": "View Details"
 	},
+	"api-key": {
+		"defaultMessage": "API Key"
+	},
+	"api-keys": {
+		"defaultMessage": "API Keys"
+	},
+	"apikey.description": {
+		"defaultMessage": "Keys are used as Bearer tokens to access the API, for example from the MCP server"
+	},
+	"apikey.never-used": {
+		"defaultMessage": "Never used"
+	},
+	"apikey.reroll": {
+		"defaultMessage": "Reroll"
+	},
+	"apikey.reroll.content": {
+		"defaultMessage": "This will replace the key's secret. The old secret stops working immediately and anything still using it will lose access."
+	},
+	"apikey.revoke": {
+		"defaultMessage": "Revoke API Key"
+	},
+	"apikey.revoke.content": {
+		"defaultMessage": "Are you sure you want to revoke this API key? Anything still using it will lose access immediately."
+	},
+	"apikey.secret-warning": {
+		"defaultMessage": "Copy this key now — it will not be shown again."
+	},
 	"auditlogs": {
 		"defaultMessage": "Audit Logs"
 	},
@@ -301,6 +328,9 @@
 	},
 	"column.incoming-port": {
 		"defaultMessage": "Incoming Port"
+	},
+	"column.last-used": {
+		"defaultMessage": "Last Used"
 	},
 	"column.name": {
 		"defaultMessage": "Name"

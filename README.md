@@ -97,8 +97,9 @@ redirections, 404 hosts, TCP/UDP streams, SSL certificates and access lists
 through NPM's existing API.
 
 - **Transport:** Streamable HTTP (`/mcp`)
-- **Auth to NPM:** logs in with credentials from environment variables and
-  auto-refreshes the JWT (use an account without 2FA)
+- **Auth to NPM:** an API key created in the NPM UI (recommended — revocable,
+  reroll-able, works with 2FA accounts), or login credentials with JWT
+  auto-refresh (account without 2FA)
 - **Tools:** 46 `npm_*` tools covering full CRUD for every host type plus
   read-only users/settings/audit-log/reports
 
@@ -107,7 +108,7 @@ Quick start:
 ```bash
 cd mcp
 npm install
-cp .env.example .env   # set NPM_BASE_URL, NPM_IDENTITY, NPM_SECRET
+cp .env.example .env   # set NPM_BASE_URL and NPM_API_KEY (or NPM_IDENTITY/NPM_SECRET)
 npm run build
 npm start
 ```

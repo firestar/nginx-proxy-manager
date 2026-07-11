@@ -24,6 +24,7 @@ const Tags = lazy(() => import("src/pages/Tags"));
 const TagGroups = lazy(() => import("src/pages/TagGroups"));
 const AuditLog = lazy(() => import("src/pages/AuditLog"));
 const Users = lazy(() => import("src/pages/Users"));
+const ApiKeys = lazy(() => import("src/pages/ApiKeys"));
 const ProxyHosts = lazy(() => import("src/pages/Nginx/ProxyHosts"));
 const RedirectionHosts = lazy(() => import("src/pages/Nginx/RedirectionHosts"));
 const DeadHosts = lazy(() => import("src/pages/Nginx/DeadHosts"));
@@ -72,6 +73,7 @@ function Router() {
 							<Route path="/audit-log" element={<AuditLog />} />
 							<Route path="/settings" element={<Settings />} />
 							<Route path="/users" element={<Users />} />
+							<Route path="/api-keys" element={<ApiKeys />} />
 							<Route path="/nginx/proxy" element={<ProxyHosts />} />
 							<Route path="/nginx/redirection" element={<RedirectionHosts />} />
 							<Route path="/nginx/404" element={<DeadHosts />} />

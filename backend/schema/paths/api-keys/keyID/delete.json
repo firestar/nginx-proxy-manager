@@ -1,0 +1,40 @@
+{
+	"operationId": "deleteApiKey",
+	"summary": "Revoke an API key",
+	"tags": ["api-keys"],
+	"security": [
+		{
+			"bearerAuth": []
+		}
+	],
+	"parameters": [
+		{
+			"in": "path",
+			"name": "keyID",
+			"description": "API Key ID",
+			"schema": {
+				"type": "integer",
+				"minimum": 1
+			},
+			"required": true,
+			"example": 1
+		}
+	],
+	"responses": {
+		"200": {
+			"description": "200 response",
+			"content": {
+				"application/json": {
+					"examples": {
+						"default": {
+							"value": true
+						}
+					},
+					"schema": {
+						"type": "boolean"
+					}
+				}
+			}
+		}
+	}
+}

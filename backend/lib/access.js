@@ -6,12 +6,15 @@
  * the "role" which could be "user" or "admin". The scope in fact, could be "worker" or anything else.
  */
 
+import crypto from "node:crypto";
 import fs from "node:fs";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import Ajv from "ajv/dist/2020.js";
 import _ from "lodash";
 import { access as logger } from "../logger.js";
+import apiKeyModel from "../models/api_key.js";
+import now from "../models/now_helper.js";
 import proxyHostModel from "../models/proxy_host.js";
 import TokenModel from "../models/token.js";
 import userModel from "../models/user.js";
@@ -21,6 +24,8 @@ import errs from "./error.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+// Bearer values with this prefix are API keys, not JWTs.
+const API_KEY_PREFIX = "npm_";
 
 export default function (tokenString) {
 	const Token = TokenModel();
@@ -30,6 +35,48 @@ export default function (tokenString) {
 	let allowInternalAccess = false;
 	let userRoles = [];
 	let permissions = {};
+	let apiKeyTokenData = null;
+
+	/**
+	 * API keys short-circuit JWT verification: look the key up by hash and
+	 * impersonate the owning user with plain `user` scope. Cached for the
+	 * lifetime of this Access instance.
+	 *
+	 * @returns {Promise}
+	 */
+	this.loadApiKey = async () => {
+		if (apiKeyTokenData) {
+			return apiKeyTokenData;
+		}
+
+		const hash = crypto.createHash("sha256").update(tokenString).digest("hex");
+		const row = await apiKeyModel
+			.query()
+			.where("secret_hash", hash)
+			.andWhere("is_deleted", 0)
+			.first();
+
+		if (!row) {
+			throw new errs.AuthError("Invalid API key");
+		}
+
+		// Informational only — a failed stamp must not block the request.
+		apiKeyModel
+			.query()
+			.where("id", row.id)
+			.patch({ last_used_on: now() })
+			.catch((err) => logger.error(err.message));
+
+		apiKeyTokenData = {
+			iss: "api-key",
+			attrs: { id: row.user_id },
+			scope: ["user"],
+		};
+		Token.set("iss", apiKeyTokenData.iss);
+		Token.set("attrs", apiKeyTokenData.attrs);
+		Token.set("scope", apiKeyTokenData.scope);
+		return apiKeyTokenData;
+	};
 
 	/**
 	 * Loads the Token object from the token string
@@ -45,7 +92,11 @@ export default function (tokenString) {
 			throw new errs.PermissionError("Permission Denied");
 		}
 
-		tokenData = await Token.load(tokenString);
+		if (tokenString.startsWith(API_KEY_PREFIX)) {
+			tokenData = await this.loadApiKey();
+		} else {
+			tokenData = await Token.load(tokenString);
+		}
 
 		// At this point we need to load the user from the DB and make sure they:
 		// - exist (and not soft deleted)
@@ -206,6 +257,9 @@ export default function (tokenString) {
 		 */
 		load: async (allowInternal) => {
 			if (tokenString) {
+				if (tokenString.startsWith(API_KEY_PREFIX)) {
+					return await this.loadApiKey();
+				}
 				return await Token.load(tokenString);
 			}
 			allowInternalAccess = allowInternal;

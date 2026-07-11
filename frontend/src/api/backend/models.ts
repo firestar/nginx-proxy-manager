@@ -44,6 +44,17 @@ export interface AuditLog {
 	user?: User;
 }
 
+export interface ApiKey {
+	id: number;
+	createdOn: string;
+	modifiedOn: string;
+	userId: number;
+	name: string;
+	lastUsedOn: string | null;
+	/** Full secret. Only present in create/reroll responses, never again. */
+	key?: string;
+}
+
 export interface AccessList {
 	id?: number;
 	createdOn?: string;

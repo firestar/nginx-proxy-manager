@@ -4,6 +4,7 @@ import errs from "../lib/error.js";
 import logRequest from "../lib/express/log-request.js";
 import pjson from "../package.json" with { type: "json" };
 import { isSetup } from "../setup.js";
+import apiKeysRoutes from "./api-keys.js";
 import auditLogRoutes from "./audit-log.js";
 import ciRoutes from "./ci.js";
 import accessListsRoutes from "./nginx/access_lists.js";
@@ -48,6 +49,7 @@ router.get("/", async (_, res /*, next*/) => {
 });
 
 router.use("/schema", schemaRoutes);
+router.use("/api-keys", apiKeysRoutes);
 router.use("/tokens", tokensRoutes);
 router.use("/users", usersRoutes);
 router.use("/audit-log", auditLogRoutes);

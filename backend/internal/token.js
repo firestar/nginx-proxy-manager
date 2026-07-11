@@ -110,6 +110,11 @@ export default {
 	 * @returns {Promise}
 	 */
 	getFreshToken: async (access, data) => {
+		// An API key must never be exchangeable for a JWT, otherwise a revoked
+		// key could live on through tokens it minted beforehand.
+		if (access?.token.get("iss") === "api-key") {
+			throw new errs.AuthError("API keys cannot be used to issue tokens");
+		}
 		const Token = TokenModel();
 		const thisData = data || {};
 

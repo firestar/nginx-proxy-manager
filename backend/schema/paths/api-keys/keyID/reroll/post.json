@@ -1,0 +1,49 @@
+{
+	"operationId": "rerollApiKey",
+	"summary": "Reroll an API key",
+	"description": "Replaces the key's secret. The old secret stops working immediately. The response includes the new secret key exactly once.",
+	"tags": ["api-keys"],
+	"security": [
+		{
+			"bearerAuth": []
+		}
+	],
+	"parameters": [
+		{
+			"in": "path",
+			"name": "keyID",
+			"description": "API Key ID",
+			"schema": {
+				"type": "integer",
+				"minimum": 1
+			},
+			"required": true,
+			"example": 1
+		}
+	],
+	"responses": {
+		"200": {
+			"description": "200 response",
+			"content": {
+				"application/json": {
+					"examples": {
+						"default": {
+							"value": {
+								"id": 1,
+								"created_on": "2026-07-11T12:00:00.000Z",
+								"modified_on": "2026-07-11T12:05:00.000Z",
+								"user_id": 1,
+								"name": "MCP Server",
+								"last_used_on": null,
+								"key": "npm_hV2tQ7Wk1mPGslXo8ECC2XONejUCBXzD9JGC2CMaVxN"
+							}
+						}
+					},
+					"schema": {
+						"$ref": "../../../../components/api-key-object.json"
+					}
+				}
+			}
+		}
+	}
+}
