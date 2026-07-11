@@ -8,6 +8,7 @@ import Modal from "react-bootstrap/Modal";
 import {
 	AccessField,
 	Button,
+	CommonNginxOptionsFields,
 	DomainNamesField,
 	HasPermission,
 	Loading,
@@ -45,6 +46,11 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 		const { ...payload } = {
 			id: id === "new" ? undefined : id,
 			...values,
+			clientMaxBodySize: values.clientMaxBodySize?.trim() ? values.clientMaxBodySize : null,
+			proxyConnectTimeout: values.proxyConnectTimeout === "" || values.proxyConnectTimeout === null || values.proxyConnectTimeout === undefined ? null : Number(values.proxyConnectTimeout),
+			proxySendTimeout: values.proxySendTimeout === "" || values.proxySendTimeout === null || values.proxySendTimeout === undefined ? null : Number(values.proxySendTimeout),
+			proxyReadTimeout: values.proxyReadTimeout === "" || values.proxyReadTimeout === null || values.proxyReadTimeout === undefined ? null : Number(values.proxyReadTimeout),
+			proxyBuffering: values.proxyBuffering || null,
 		};
 
 		setProxyHost(payload, {
@@ -94,6 +100,11 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 							// Advanced tab
 							advancedConfig: data?.advancedConfig || "",
 							meta: data?.meta || {},
+							clientMaxBodySize: data?.clientMaxBodySize ?? null,
+							proxyConnectTimeout: data?.proxyConnectTimeout ?? null,
+							proxySendTimeout: data?.proxySendTimeout ?? null,
+							proxyReadTimeout: data?.proxyReadTimeout ?? null,
+							proxyBuffering: data?.proxyBuffering ?? null,
 						} as any
 					}
 					onSubmit={onSubmit}
@@ -346,6 +357,7 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 												<SSLOptionsFields color="bg-lime" forProxyHost={true} />
 											</div>
 											<div className="tab-pane" id="tab-advanced" role="tabpanel">
+												<CommonNginxOptionsFields />
 												<NginxConfigField />
 											</div>
 										</div>

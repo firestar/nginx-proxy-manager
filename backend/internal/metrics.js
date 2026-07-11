@@ -6,6 +6,10 @@ import { parseLogLine } from "./metrics-parser.js";
 
 const LOG_DIR = "/data/logs";
 const COLLECT_INTERVAL = 30 * 1000; // 30s
+// Cap bytes read per pass so a huge unread backlog (e.g. after downtime) can't
+// exhaust memory; the offset only advances to the last parsed newline, so the
+// remainder is picked up on subsequent passes.
+const MAX_READ_BYTES = 16 * 1024 * 1024;
 const MINUTE_RETENTION_HOURS = 48;
 const HOUR_RETENTION_DAYS = 30;
 
@@ -109,7 +113,7 @@ const processHost = async (host) => {
 		return;
 	}
 
-	const readLength = currentSize - offset;
+	const readLength = Math.min(currentSize - offset, MAX_READ_BYTES);
 	const buf = Buffer.alloc(readLength);
 	const fd = fs.openSync(logPath, "r");
 	let bytesRead = 0;

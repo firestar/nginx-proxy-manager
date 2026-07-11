@@ -1,4 +1,4 @@
-import { IconDotsVertical, IconEdit, IconPower, IconTrash } from "@tabler/icons-react";
+import { IconChartBar, IconDotsVertical, IconEdit, IconPower, IconTrash } from "@tabler/icons-react";
 import {
 	createColumnHelper,
 	getCoreRowModel,
@@ -33,6 +33,7 @@ interface Props {
 	onNew?: () => void;
 	onTagClick?: (tag: Tag) => void;
 	onSelectionChange?: (ids: number[]) => void;
+	onMetrics?: (id: number) => void;
 }
 export default function Table({
 	data,
@@ -44,6 +45,7 @@ export default function Table({
 	isFiltered,
 	onTagClick,
 	onSelectionChange,
+	onMetrics,
 }: Props) {
 	const columnHelper = createColumnHelper<ProxyHost>();
 	const columns = useMemo(
@@ -172,6 +174,17 @@ export default function Table({
 									<IconEdit size={16} />
 									<T id="action.edit" />
 								</a>
+								<a
+									className="dropdown-item"
+									href="#"
+									onClick={(e) => {
+										e.preventDefault();
+										onMetrics?.(info.row.original.id);
+									}}
+								>
+									<IconChartBar size={16} />
+									<T id="action.metrics" />
+								</a>
 								<HasPermission section={PROXY_HOSTS} permission={MANAGE} hideError>
 									<a
 										className="dropdown-item"
@@ -206,7 +219,7 @@ export default function Table({
 				},
 			}),
 		],
-		[columnHelper, onEdit, onDisableToggle, onDelete, onTagClick],
+		[columnHelper, onEdit, onDisableToggle, onDelete, onTagClick, onMetrics],
 	);
 
 	const [sorting, setSorting] = useState<SortingState>([]);

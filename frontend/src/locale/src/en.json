@@ -122,6 +122,9 @@
 	"action.enable": {
 		"defaultMessage": "Enable"
 	},
+	"action.metrics": {
+		"defaultMessage": "Metrics"
+	},
 	"action.permissions": {
 		"defaultMessage": "Permissions"
 	},
@@ -518,6 +521,33 @@
 	"footer.github-fork": {
 		"defaultMessage": "Fork me on Github"
 	},
+	"host.advanced.buffering-default": {
+		"defaultMessage": "Default"
+	},
+	"host.advanced.buffering-off": {
+		"defaultMessage": "Off"
+	},
+	"host.advanced.buffering-on": {
+		"defaultMessage": "On"
+	},
+	"host.advanced.common-options": {
+		"defaultMessage": "Common Options"
+	},
+	"host.advanced.connect-timeout": {
+		"defaultMessage": "Connect Timeout (s)"
+	},
+	"host.advanced.proxy-buffering": {
+		"defaultMessage": "Proxy Buffering"
+	},
+	"host.advanced.read-timeout": {
+		"defaultMessage": "Read Timeout (s)"
+	},
+	"host.advanced.send-timeout": {
+		"defaultMessage": "Send Timeout (s)"
+	},
+	"host.advanced.upload-size": {
+		"defaultMessage": "Upload Size Limit"
+	},
 	"host.flags.block-exploits": {
 		"defaultMessage": "Block Common Exploits"
 	},
@@ -577,6 +607,36 @@
 	},
 	"nginx-config.label": {
 		"defaultMessage": "Custom Nginx Configuration"
+	},
+	"metrics": {
+		"defaultMessage": "Metrics"
+	},
+	"metrics.bandwidth": {
+		"defaultMessage": "Bandwidth"
+	},
+	"metrics.cache-hit": {
+		"defaultMessage": "Cache Hit Rate"
+	},
+	"metrics.error-rate": {
+		"defaultMessage": "Error Rate"
+	},
+	"metrics.no-data": {
+		"defaultMessage": "No traffic recorded for this period."
+	},
+	"metrics.range": {
+		"defaultMessage": "Range"
+	},
+	"metrics.requests": {
+		"defaultMessage": "Requests"
+	},
+	"metrics.status-codes": {
+		"defaultMessage": "Status Codes"
+	},
+	"metrics.total-bandwidth": {
+		"defaultMessage": "Total Bandwidth"
+	},
+	"metrics.total-requests": {
+		"defaultMessage": "Total Requests"
 	},
 	"nginx-config.placeholder": {
 		"defaultMessage": "# Enter your custom Nginx configuration here at your own risk!"

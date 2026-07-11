@@ -159,6 +159,36 @@
 			],
 			"example": null
 		},
+		"client_max_body_size": {
+			"type": ["string", "null"],
+			"pattern": "^\\d+[kmg]?$",
+			"description": "Maximum allowed size of the client request body",
+			"example": "100m"
+		},
+		"proxy_connect_timeout": {
+			"type": ["integer", "null"],
+			"minimum": 1,
+			"description": "Timeout in seconds for establishing a connection with the proxied server",
+			"example": 60
+		},
+		"proxy_send_timeout": {
+			"type": ["integer", "null"],
+			"minimum": 1,
+			"description": "Timeout in seconds for transmitting a request to the proxied server",
+			"example": 60
+		},
+		"proxy_read_timeout": {
+			"type": ["integer", "null"],
+			"minimum": 1,
+			"description": "Timeout in seconds for reading a response from the proxied server",
+			"example": 60
+		},
+		"proxy_buffering": {
+			"type": ["string", "null"],
+			"enum": ["on", "off", null],
+			"description": "Enable or disable buffering of responses from the proxied server",
+			"example": "off"
+		},
 		"tags": {
 			"type": "array",
 			"description": "Tags attached to this object",

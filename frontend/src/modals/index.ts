@@ -11,6 +11,7 @@ export * from "./HelpModal";
 export * from "./HTTPCertificateModal";
 export * from "./PermissionsModal";
 export * from "./ProxyHostModal";
+export * from "./ProxyHostMetricsModal";
 export * from "./RedirectionHostModal";
 export * from "./RenewCertificateModal";
 export * from "./SetPasswordModal";

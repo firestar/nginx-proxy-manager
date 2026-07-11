@@ -154,6 +154,11 @@ export interface ProxyHost {
 	hstsEnabled: boolean;
 	hstsSubdomains: boolean;
 	trustForwardedProto: boolean;
+	clientMaxBodySize?: string | null;
+	proxyConnectTimeout?: number | null;
+	proxySendTimeout?: number | null;
+	proxyReadTimeout?: number | null;
+	proxyBuffering?: string | null;
 	tagIds?: number[];
 	// Expansions:
 	owner?: User;
