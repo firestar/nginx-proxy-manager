@@ -13,5 +13,3 @@ ports:
     name: admin
   - port: 443
     name: https
-  - port: 3001
-    name: mcp

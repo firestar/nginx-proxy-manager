@@ -11,6 +11,22 @@ server {
 		return 302 /api/;
 	}
 
+	# MCP endpoint streams SSE responses; buffering would stall them.
+	location /api/mcp {
+		add_header            X-Served-By $host;
+		proxy_set_header Host $host;
+		proxy_set_header      X-Forwarded-Scheme $scheme;
+		proxy_set_header      X-Forwarded-Proto  $scheme;
+		proxy_set_header      X-Forwarded-For    $remote_addr;
+		proxy_pass            http://127.0.0.1:3000/mcp;
+
+		proxy_buffering       off;
+		proxy_cache           off;
+		proxy_http_version    1.1;
+		proxy_read_timeout    24h;
+		proxy_send_timeout    15m;
+	}
+
 	location /api/ {
 		add_header            X-Served-By $host;
 		proxy_set_header Host $host;

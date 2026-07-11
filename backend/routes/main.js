@@ -7,6 +7,7 @@ import { isSetup } from "../setup.js";
 import apiKeysRoutes from "./api-keys.js";
 import auditLogRoutes from "./audit-log.js";
 import ciRoutes from "./ci.js";
+import mcpRoutes from "./mcp.js";
 import accessListsRoutes from "./nginx/access_lists.js";
 import certificatesHostsRoutes from "./nginx/certificates.js";
 import deadHostsRoutes from "./nginx/dead_hosts.js";
@@ -50,6 +51,7 @@ router.get("/", async (_, res /*, next*/) => {
 
 router.use("/schema", schemaRoutes);
 router.use("/api-keys", apiKeysRoutes);
+router.use("/mcp", mcpRoutes);
 router.use("/tokens", tokensRoutes);
 router.use("/users", usersRoutes);
 router.use("/audit-log", auditLogRoutes);
