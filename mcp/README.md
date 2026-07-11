@@ -3,6 +3,11 @@
 A [Model Context Protocol](https://modelcontextprotocol.io) server that lets an AI
 assistant (Claude, or any MCP client) manage a running **Nginx Proxy Manager (NPM)**
 instance: create and edit proxy hosts, redirections, 404 hosts, TCP/UDP streams,
+
+> **Note:** NPM now serves this MCP server **built-in** at `/api/mcp` on the admin
+> port — no separate process, authenticated directly with an NPM API key. Prefer
+> that unless you need to run the MCP server on a different machine than NPM.
+> See `docs/src/mcp/index.md` for the built-in endpoint's documentation.
 SSL certificates and access lists.
 
 It talks to NPM's existing REST API — it does **not** modify NPM itself. Run it

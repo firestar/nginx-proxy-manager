@@ -82,6 +82,7 @@ export default defineConfig({
 					{ text: "Screenshots", link: "/screenshots/" },
 					{ text: "Setup Instructions", link: "/setup/" },
 					{ text: "Advanced Configuration", link: "/advanced-config/" },
+					{ text: "MCP Server", link: "/mcp/" },
 					{ text: "Upgrading", link: "/upgrading/" },
 					{ text: "Frequently Asked Questions", link: "/faq/" },
 					{ text: "Certbot", link: "/certbot/" },
