@@ -25,6 +25,13 @@ const location = z.object({
 	advanced_config: z.string().optional(),
 });
 
+const headerItem = z.object({
+	direction: z.enum(["request", "response"]).describe("Whether to manipulate the request or response header"),
+	action: z.enum(["set", "remove"]).describe('"set" injects/overwrites the header; "remove" suppresses it'),
+	name: z.string().min(1).describe("Header name, e.g. X-Custom-Header"),
+	value: z.string().optional().describe("Header value (required when action is \"set\")"),
+});
+
 // Optional fields shared by create and update.
 const optionalFields = {
 	certificate_id: z
@@ -49,6 +56,10 @@ const optionalFields = {
 		.optional()
 		.describe("IDs of tags to attach; replaces the existing set"),
 	meta: z.record(z.unknown()).optional(),
+	headers: z
+		.array(headerItem)
+		.optional()
+		.describe("Custom request/response header manipulations"),
 };
 
 export function registerProxyHostTools(server: McpServer): void {
@@ -151,5 +162,45 @@ export function registerProxyHostTools(server: McpServer): void {
 			inputSchema: { id: z.number().int().describe("Proxy host id") },
 		},
 		(args) => npmRequest("POST", `${BASE}/${Number(args.id)}/disable`),
+	);
+
+	registerTool(
+		server,
+		"npm_set_maintenance",
+		{
+			title: "Set proxy host maintenance mode",
+			description: "Enable or disable maintenance mode on a proxy host. When enabled, the host serves a 503 page over valid TLS; cert renewal is unaffected.",
+			inputSchema: {
+				id: z.number().int().describe("Proxy host id"),
+				enabled: z.boolean().describe("true to enable maintenance mode, false to disable"),
+			},
+		},
+		(args) => npmRequest("POST", `${BASE}/${Number(args.id)}/maintenance`, { body: { enabled: args.enabled } }),
+	);
+
+	registerTool(
+		server,
+		"npm_get_maintenance_page",
+		{
+			title: "Get proxy host maintenance page HTML",
+			description: "Get the custom HTML for a proxy host's 503 maintenance page. Empty string means the built-in branded page is used.",
+			readOnly: true,
+			inputSchema: { id: z.number().int().describe("Proxy host id") },
+		},
+		(args) => npmRequest("GET", `${BASE}/${Number(args.id)}/maintenance-page`),
+	);
+
+	registerTool(
+		server,
+		"npm_set_maintenance_page",
+		{
+			title: "Set proxy host maintenance page HTML",
+			description: "Set custom HTML for a proxy host's 503 maintenance page. Pass empty string to revert to the built-in branded page.",
+			inputSchema: {
+				id: z.number().int().describe("Proxy host id"),
+				html: z.string().describe("Custom HTML content; empty string reverts to the built-in page"),
+			},
+		},
+		(args) => npmRequest("PUT", `${BASE}/${Number(args.id)}/maintenance-page`, { body: { html: args.html } }),
 	);
 }

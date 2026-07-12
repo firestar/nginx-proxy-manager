@@ -7,6 +7,7 @@ import internalAuditLog from "./audit-log.js";
 import internalCertificate from "./certificate.js";
 import internalHost from "./host.js";
 import internalNginx from "./nginx.js";
+import internalNode from "./node.js";
 import internalTag from "./tag.js";
 import { applyHostVisibility, assertTagWrite, getUserTagIds } from "../lib/host-visibility.js";
 
@@ -38,6 +39,10 @@ const internalStream = {
 					const userTagIds = await access.loadUserTagIds();
 					assertTagWrite({ visibility: "tags", tagIds: tagIds || [], userTagIds });
 				}
+			})
+			.then(() => {
+				// M1: hosts pinned to a remote node need DNS-challenge (or custom) certs
+				return internalNode.assertHostAllowed(data.node_id, create_certificate ? "new" : data.certificate_id, data.node_all);
 			})
 			.then(() => {
 				// TODO: At this point the existing ports should have been checked
@@ -127,7 +132,7 @@ const internalStream = {
 				// TODO: at this point the existing streams should have been checked
 				return internalStream.get(access, { id: thisData.id });
 			})
-			.then((row) => {
+			.then(async (row) => {
 				if (row.id !== thisData.id) {
 					// Sanity check that something crazy hasn't happened
 					throw new errs.InternalValidationError(
@@ -135,6 +140,12 @@ const internalStream = {
 					);
 				}
 
+				// M1: hosts pinned to a remote node need DNS-challenge (or custom) certs
+				await internalNode.assertHostAllowed(
+					thisData.node_id !== undefined ? thisData.node_id : row.node_id,
+					create_certificate ? "new" : thisData.certificate_id !== undefined ? thisData.certificate_id : row.certificate_id,
+					thisData.node_all !== undefined ? thisData.node_all : row.node_all,
+				);
 				if (create_certificate) {
 					return internalCertificate
 						.createQuickCertificate(access, {

@@ -17,11 +17,13 @@ const setup = new signale.Signale({ scope: "Setup    ", ...opts });
 const ipRanges = new signale.Signale({ scope: "IP Ranges", ...opts });
 const metrics = new signale.Signale({ scope: "Metrics  ", ...opts });
 const remoteVersion = new signale.Signale({ scope: "Remote Version", ...opts });
-
+const notification = new signale.Signale({ scope: "Notif    ", ...opts });
+const uptime = new signale.Signale({ scope: "Uptime   ", ...opts });
+const backup = new signale.Signale({ scope: "Backup   ", ...opts });
+const node = new signale.Signale({ scope: "Node     ", ...opts });
 const debug = (logger, ...args) => {
 	if (isDebugMode()) {
 		logger.debug(...args);
 	}
 };
-
-export { debug, global, migrate, express, access, nginx, ssl, certbot, importer, setup, ipRanges, metrics, remoteVersion };
+export { debug, global, migrate, express, access, nginx, ssl, certbot, importer, setup, ipRanges, metrics, remoteVersion, notification, uptime, backup, node };

@@ -25,15 +25,30 @@ const TagGroups = lazy(() => import("src/pages/TagGroups"));
 const AuditLog = lazy(() => import("src/pages/AuditLog"));
 const Users = lazy(() => import("src/pages/Users"));
 const ApiKeys = lazy(() => import("src/pages/ApiKeys"));
+const Nodes = lazy(() => import("src/pages/Nodes"));
 const ProxyHosts = lazy(() => import("src/pages/Nginx/ProxyHosts"));
 const RedirectionHosts = lazy(() => import("src/pages/Nginx/RedirectionHosts"));
-const DeadHosts = lazy(() => import("src/pages/Nginx/DeadHosts"));
 const Streams = lazy(() => import("src/pages/Nginx/Streams"));
+const DeadHosts = lazy(() => import("src/pages/Nginx/DeadHosts"));
+const PublicStatusPage = lazy(() => import("src/pages/PublicStatus"));
 
 function Router() {
 	const health = useHealth();
 	const { authenticated } = useAuthState();
+	const path = window.location.pathname;
 
+	// Public status page — bypasses all auth checks
+	if (path.startsWith("/status/")) {
+		return (
+			<BrowserRouter>
+				<Suspense fallback={<LoadingPage />}>
+					<Routes>
+						<Route path="/status/:slug" element={<PublicStatusPage />} />
+					</Routes>
+				</Suspense>
+			</BrowserRouter>
+		);
+	}
 	if (health.isLoading) {
 		return <LoadingPage />;
 	}
@@ -75,6 +90,7 @@ function Router() {
 							<Route path="/users" element={<Users />} />
 							<Route path="/api-keys" element={<ApiKeys />} />
 							<Route path="/nginx/proxy" element={<ProxyHosts />} />
+							<Route path="/nodes" element={<Nodes />} />
 							<Route path="/nginx/redirection" element={<RedirectionHosts />} />
 							<Route path="/nginx/404" element={<DeadHosts />} />
 							<Route path="/nginx/stream" element={<Streams />} />

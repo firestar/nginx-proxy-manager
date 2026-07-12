@@ -16,7 +16,11 @@
 			"access_lists:view",
 			"access_lists:manage",
 			"certificates:view",
-			"certificates:manage"
+			"certificates:manage",
+			"notifications:view",
+			"notifications:manage",
+			"backup:view",
+			"backup:manage"
 		]
 	},
 	"example": ["proxy_hosts:manage", "certificates:view"]

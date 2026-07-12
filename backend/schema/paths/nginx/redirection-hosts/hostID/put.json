@@ -48,6 +48,12 @@
 						"certificate_id": {
 							"$ref": "../../../../components/redirection-host-object.json#/properties/certificate_id"
 						},
+						"node_id": {
+							"$ref": "../../../../components/redirection-host-object.json#/properties/node_id"
+						},
+						"node_all": {
+							"$ref": "../../../../components/redirection-host-object.json#/properties/node_all"
+						},
 						"ssl_forced": {
 							"$ref": "../../../../components/redirection-host-object.json#/properties/ssl_forced"
 						},

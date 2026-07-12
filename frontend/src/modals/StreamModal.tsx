@@ -3,7 +3,7 @@ import { Field, Form, Formik } from "formik";
 import { type ReactNode, useState } from "react";
 import { Alert } from "react-bootstrap";
 import Modal from "react-bootstrap/Modal";
-import { Button, Loading, SSLCertificateField, SSLOptionsFields, TagsField } from "src/components";
+import { Button, Loading, NodeField, SSLCertificateField, SSLOptionsFields, TagsField } from "src/components";
 import { useSetStream, useStream } from "src/hooks";
 import { intl, T } from "src/locale";
 import { validateNumber, validateString } from "src/modules/Validations";
@@ -30,6 +30,8 @@ const StreamModal = EasyModal.create(({ id, visible, remove }: Props) => {
 		const { ...payload } = {
 			id: id === "new" ? undefined : id,
 			...values,
+			nodeId: values.nodeAll ? null : values.nodeId || null,
+			nodeAll: !!values.nodeAll,
 		};
 
 		setStream(payload, {
@@ -64,6 +66,8 @@ const StreamModal = EasyModal.create(({ id, visible, remove }: Props) => {
 							udpForwarding: data?.udpForwarding,
 							certificateId: data?.certificateId,
 							tagIds: data?.tags?.map((t) => t.id) || data?.tagIds || [],
+							nodeId: data?.nodeId || 0,
+							nodeAll: data?.nodeAll || false,
 							meta: data?.meta || {},
 						} as any
 					}
@@ -112,6 +116,7 @@ const StreamModal = EasyModal.create(({ id, visible, remove }: Props) => {
 									<div className="card-body">
 										<div className="tab-content">
 											<div className="tab-pane active show" id="tab-details" role="tabpanel">
+												<NodeField />
 												<Field name="incomingPort" validate={validateNumber(1, 65535)}>
 													{({ field, form }: any) => (
 														<div className="mb-3">

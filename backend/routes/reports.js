@@ -41,10 +41,52 @@ router
 	 */
 	.get(async (req, res, next) => {
 		try {
-			const data = await internalReport.getProxyHostMetrics(res.locals.access, {
+		const data = await internalReport.getProxyHostMetrics(res.locals.access, {
 				id: Number.parseInt(req.params.id, 10),
 				range: req.query.range,
+				breakdown: req.query.breakdown === "1" || req.query.breakdown === "true",
 			});
+			res.status(200).send(data);
+		} catch (err) {
+			debug(logger, `${req.method.toUpperCase()} ${req.path}: ${err}`);
+			next(err);
+		}
+	});
+
+
+router
+	.route("/uptime")
+	.options((_, res) => {
+		res.sendStatus(204);
+	})
+	.all(jwtdecode())
+
+	/**
+	 * GET /reports/uptime
+	 */
+	.get(async (req, res, next) => {
+		try {
+			const data = await internalReport.getUptimeReport(res.locals.access);
+			res.status(200).send(data);
+		} catch (err) {
+			debug(logger, `${req.method.toUpperCase()} ${req.path}: ${err}`);
+			next(err);
+		}
+	});
+
+router
+	.route("/nodes/metrics")
+	.options((_, res) => {
+		res.sendStatus(204);
+	})
+	.all(jwtdecode())
+
+	/**
+	 * GET /reports/nodes/metrics
+	 */
+	.get(async (req, res, next) => {
+		try {
+			const data = await internalReport.getNodesMetrics(res.locals.access);
 			res.status(200).send(data);
 		} catch (err) {
 			debug(logger, `${req.method.toUpperCase()} ${req.path}: ${err}`);

@@ -95,6 +95,9 @@
 	"action.add": {
 		"defaultMessage": "Add"
 	},
+	"action.add-header": {
+		"defaultMessage": "Add Header"
+	},
 	"action.add-location": {
 		"defaultMessage": "Add Location"
 	},
@@ -121,6 +124,12 @@
 	},
 	"action.enable": {
 		"defaultMessage": "Enable"
+	},
+	"action.maintenance-off": {
+		"defaultMessage": "Turn off maintenance mode"
+	},
+	"action.maintenance-on": {
+		"defaultMessage": "Turn on maintenance mode"
 	},
 	"action.metrics": {
 		"defaultMessage": "Metrics"
@@ -181,6 +190,9 @@
 	},
 	"auto": {
 		"defaultMessage": "Auto"
+	},
+	"badge.maintenance": {
+		"defaultMessage": "Maintenance"
 	},
 	"bulk.add-tags": {
 		"defaultMessage": "Add tags"
@@ -338,11 +350,14 @@
 	"column.expires": {
 		"defaultMessage": "Expires"
 	},
-	"column.icon": {
-		"defaultMessage": "Icon"
+	"column.headers": {
+		"defaultMessage": "Headers"
 	},
 	"column.http-code": {
 		"defaultMessage": "HTTP Code"
+	},
+	"column.icon": {
+		"defaultMessage": "Icon"
 	},
 	"column.incoming-port": {
 		"defaultMessage": "Incoming Port"
@@ -352,6 +367,12 @@
 	},
 	"column.name": {
 		"defaultMessage": "Name"
+	},
+	"column.nginx-status": {
+		"defaultMessage": "Nginx"
+	},
+	"column.node": {
+		"defaultMessage": "Node"
 	},
 	"column.protocol": {
 		"defaultMessage": "Protocol"
@@ -379,9 +400,6 @@
 	},
 	"column.source": {
 		"defaultMessage": "Source"
-	},
-	"column.nginx-status": {
-		"defaultMessage": "Nginx"
 	},
 	"column.ssl": {
 		"defaultMessage": "SSL"
@@ -572,6 +590,18 @@
 	"host.forward-scheme": {
 		"defaultMessage": "Scheme"
 	},
+	"host.headers.action": {
+		"defaultMessage": "Action"
+	},
+	"host.headers.direction": {
+		"defaultMessage": "Direction"
+	},
+	"host.headers.name": {
+		"defaultMessage": "Header Name"
+	},
+	"host.headers.value": {
+		"defaultMessage": "Header Value"
+	},
 	"hosts": {
 		"defaultMessage": "Hosts"
 	},
@@ -608,8 +638,11 @@
 	"login.title": {
 		"defaultMessage": "Login to your account"
 	},
-	"nginx-config.label": {
-		"defaultMessage": "Custom Nginx Configuration"
+	"maintenance-page.html-label": {
+		"defaultMessage": "Custom maintenance page HTML"
+	},
+	"maintenance-page.save": {
+		"defaultMessage": "Save maintenance page"
 	},
 	"metrics": {
 		"defaultMessage": "Metrics"
@@ -641,11 +674,95 @@
 	"metrics.total-requests": {
 		"defaultMessage": "Total Requests"
 	},
+	"nginx-config.label": {
+		"defaultMessage": "Custom Nginx Configuration"
+	},
 	"nginx-config.placeholder": {
 		"defaultMessage": "# Enter your custom Nginx configuration here at your own risk!"
 	},
+	"nginx.error": {
+		"defaultMessage": "Error"
+	},
 	"no-permission-error": {
 		"defaultMessage": "You do not have access to view this."
+	},
+	"node": {
+		"defaultMessage": "Node"
+	},
+	"node.add.hint": {
+		"defaultMessage": "A node is a remote nginx server running the npm-agent container. After creating it you get a one-time enrollment token and a ready-made docker command."
+	},
+	"node.agent-version": {
+		"defaultMessage": "Agent"
+	},
+	"node.config-version": {
+		"defaultMessage": "Config"
+	},
+	"node.delete.content": {
+		"defaultMessage": "Are you sure you want to delete this node? Its agent will be disconnected."
+	},
+	"node.description": {
+		"defaultMessage": "Remote nginx servers managed by this panel via the npm-agent"
+	},
+	"node.enroll-token": {
+		"defaultMessage": "Enrollment Token"
+	},
+	"node.all": {
+		"defaultMessage": "All nodes (HA)"
+	},
+	"node.pending-apply": {
+		"defaultMessage": "Pending"
+	},
+	"node.sync-host": {
+		"defaultMessage": "Host"
+	},
+	"node.sync-matrix": {
+		"defaultMessage": "Per-Host Sync Matrix"
+	},
+	"node.field-hint": {
+		"defaultMessage": "Which nginx server serves this host. Remote nodes apply configs via the npm-agent."
+	},
+	"node.last-seen": {
+		"defaultMessage": "Last Seen"
+	},
+	"node.local": {
+		"defaultMessage": "Local"
+	},
+	"node.never-seen": {
+		"defaultMessage": "Never"
+	},
+	"node.regenerate-token": {
+		"defaultMessage": "Regenerate Token"
+	},
+	"node.regenerate-token.content": {
+		"defaultMessage": "This invalidates the node’s current credentials; the agent must re-enroll with the new token. Existing configuration on the node keeps serving."
+	},
+	"node.setup-command": {
+		"defaultMessage": "Agent Setup Command"
+	},
+	"node.setup-command.hint": {
+		"defaultMessage": "Run this on the remote server. Replace YOUR_PANEL_HOST with the address agents use to reach this panel."
+	},
+	"node.status.offline": {
+		"defaultMessage": "Offline"
+	},
+	"node.status.online": {
+		"defaultMessage": "Online"
+	},
+	"node.status.pending": {
+		"defaultMessage": "Pending Enrollment"
+	},
+	"node.req-rate": {
+		"defaultMessage": "Req Rate"
+	},
+	"node.last-metric": {
+		"defaultMessage": "Last Metric"
+	},
+	"node.token-warning": {
+		"defaultMessage": "This enrollment token is shown only once. Use it to start the agent; it is exchanged for a per-node key on first connect."
+	},
+	"nodes": {
+		"defaultMessage": "Nodes"
 	},
 	"notfound.action": {
 		"defaultMessage": "Take me home"
@@ -667,6 +784,12 @@
 	},
 	"notification.object-enabled": {
 		"defaultMessage": "{object} has been enabled"
+	},
+	"notification.object-maintenance-disabled": {
+		"defaultMessage": "{object} maintenance mode disabled"
+	},
+	"notification.object-maintenance-enabled": {
+		"defaultMessage": "{object} maintenance mode enabled"
 	},
 	"notification.object-renewed": {
 		"defaultMessage": "{object} has been renewed"
@@ -716,9 +839,6 @@
 	"offline": {
 		"defaultMessage": "Offline"
 	},
-	"nginx.error": {
-		"defaultMessage": "Error"
-	},
 	"online": {
 		"defaultMessage": "Online"
 	},
@@ -748,6 +868,9 @@
 	},
 	"permissions.visibility.all": {
 		"defaultMessage": "All Items"
+	},
+	"permissions.visibility.tags": {
+		"defaultMessage": "Restricted by Tags"
 	},
 	"permissions.visibility.title": {
 		"defaultMessage": "Item Visibility"
@@ -961,8 +1084,5 @@
 	},
 	"users": {
 		"defaultMessage": "Users"
-	},
-	"permissions.visibility.tags": {
-		"defaultMessage": "Restricted by Tags"
 	}
 }

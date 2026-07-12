@@ -206,4 +206,75 @@ router
 		}
 	});
 
+/**
+ * Maintenance mode
+ *
+ * /api/nginx/proxy-hosts/123/maintenance
+ */
+router
+	.route("/:host_id/maintenance")
+	.options((_, res) => {
+		res.sendStatus(204);
+	})
+	.all(jwtdecode())
+
+	/**
+	 * POST /api/nginx/proxy-hosts/123/maintenance
+	 */
+	.post(async (req, res, next) => {
+		try {
+			const result = await internalProxyHost.setMaintenance(res.locals.access, {
+				id: Number.parseInt(req.params.host_id, 10),
+				enabled: !!req.body.enabled,
+			});
+			res.status(200).send(result);
+		} catch (err) {
+			debug(logger, `${req.method.toUpperCase()} ${req.path}: ${err}`);
+			next(err);
+		}
+	});
+
+/**
+ * Maintenance page HTML
+ *
+ * /api/nginx/proxy-hosts/123/maintenance-page
+ */
+router
+	.route("/:host_id/maintenance-page")
+	.options((_, res) => {
+		res.sendStatus(204);
+	})
+	.all(jwtdecode())
+
+	/**
+	 * GET /api/nginx/proxy-hosts/123/maintenance-page
+	 */
+	.get(async (req, res, next) => {
+		try {
+			const result = await internalProxyHost.getMaintenancePage(res.locals.access, {
+				id: Number.parseInt(req.params.host_id, 10),
+			});
+			res.status(200).send(result);
+		} catch (err) {
+			debug(logger, `${req.method.toUpperCase()} ${req.path}: ${err}`);
+			next(err);
+		}
+	})
+
+	/**
+	 * PUT /api/nginx/proxy-hosts/123/maintenance-page
+	 */
+	.put(async (req, res, next) => {
+		try {
+			const result = await internalProxyHost.setMaintenancePage(res.locals.access, {
+				id: Number.parseInt(req.params.host_id, 10),
+				html: req.body.html || "",
+			});
+			res.status(200).send(result);
+		} catch (err) {
+			debug(logger, `${req.method.toUpperCase()} ${req.path}: ${err}`);
+			next(err);
+		}
+	});
+
 export default router;

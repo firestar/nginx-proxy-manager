@@ -24,6 +24,13 @@ const internalSetting = {
 					);
 				}
 
+				if (data.id === "acme-relay-url") {
+					const v = typeof data.value === "string" ? data.value.trim() : "";
+					if (v && !/^https?:\/\//i.test(v)) {
+						throw new errs.ValidationError("ACME Relay URL must start with http:// or https://");
+					}
+					data.value = v;
+				}
 				return settingModel.query().where({ id: data.id }).patch(data);
 			})
 			.then(() => {
@@ -67,6 +74,13 @@ const internalSetting = {
 									throw new errs.ValidationError("Could not reconfigure Nginx. Please check logs.");
 								});
 						});
+				}
+				if (row.id === "acme-relay-url") {
+					// Relay location is templated into remote-node host configs; re-push
+					// every enrolled node so the change reaches the agents.
+					import("./node.js")
+						.then(({ default: internalNode }) => internalNode.schedulePushAll())
+						.catch(() => {});
 				}
 				return row;
 			});

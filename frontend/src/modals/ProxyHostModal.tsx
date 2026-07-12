@@ -2,7 +2,7 @@ import { IconSettings } from "@tabler/icons-react";
 import cn from "classnames";
 import EasyModal, { type InnerModalProps } from "ez-modal-react";
 import { Field, Form, Formik } from "formik";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { Alert } from "react-bootstrap";
 import Modal from "react-bootstrap/Modal";
 import {
@@ -12,7 +12,9 @@ import {
 	DomainNamesField,
 	HasPermission,
 	Loading,
+	HeadersField,
 	LocationsFields,
+	NodeField,
 	NginxConfigField,
 	SSLCertificateField,
 	SSLOptionsFields,
@@ -23,6 +25,7 @@ import { T } from "src/locale";
 import { MANAGE, PROXY_HOSTS } from "src/modules/Permissions";
 import { validateNumber, validateString } from "src/modules/Validations";
 import { showObjectSuccess } from "src/notifications";
+import { getMaintenancePage, saveMaintenancePage } from "src/api/backend";
 
 const showProxyHostModal = (id: number | "new") => {
 	EasyModal.show(ProxyHostModal, { id });
@@ -37,6 +40,14 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 	const { mutate: setProxyHost } = useSetProxyHost();
 	const [errorMsg, setErrorMsg] = useState<ReactNode | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [maintenancePage, setMaintenancePage] = useState("");
+	const [maintenancePageSaving, setMaintenancePageSaving] = useState(false);
+
+	useEffect(() => {
+		if (typeof id === "number") {
+			getMaintenancePage(id).then((r) => setMaintenancePage(r.html));
+		}
+	}, [id]);
 
 	const onSubmit = async (values: any, { setSubmitting }: any) => {
 		if (isSubmitting) return;
@@ -51,6 +62,8 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 			proxySendTimeout: values.proxySendTimeout === "" || values.proxySendTimeout === null || values.proxySendTimeout === undefined ? null : Number(values.proxySendTimeout),
 			proxyReadTimeout: values.proxyReadTimeout === "" || values.proxyReadTimeout === null || values.proxyReadTimeout === undefined ? null : Number(values.proxyReadTimeout),
 			proxyBuffering: values.proxyBuffering || null,
+			nodeId: values.nodeAll ? null : values.nodeId || null,
+			nodeAll: !!values.nodeAll,
 		};
 
 		setProxyHost(payload, {
@@ -89,7 +102,10 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 							allowWebsocketUpgrade: data?.allowWebsocketUpgrade || false,
 							tagIds: data?.tags?.map((t) => t.id) || data?.tagIds || [],
 							// Locations tab
+							nodeId: data?.nodeId || 0,
+							nodeAll: data?.nodeAll || false,
 							locations: data?.locations || [],
+							headers: data?.headers || [],
 							// SSL tab
 							certificateId: data?.certificateId || 0,
 							sslForced: data?.sslForced || false,
@@ -105,6 +121,11 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 							proxySendTimeout: data?.proxySendTimeout ?? null,
 							proxyReadTimeout: data?.proxyReadTimeout ?? null,
 							proxyBuffering: data?.proxyBuffering ?? null,
+							// Uptime check tab
+							checkEnabled: data?.checkEnabled || false,
+							checkPath: data?.checkPath || "/",
+							checkIntervalS: data?.checkIntervalS || 60,
+							expectedStatus: data?.expectedStatus || "200-399",
 						} as any
 					}
 					onSubmit={onSubmit}
@@ -148,6 +169,30 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 											</li>
 											<li className="nav-item" role="presentation">
 												<a
+													href="#tab-headers"
+													className="nav-link"
+													data-bs-toggle="tab"
+													aria-selected="false"
+													tabIndex={-1}
+													role="tab"
+												>
+													<T id="column.headers" />
+												</a>
+											</li>
+											<li className="nav-item" role="presentation">
+												<a
+													href="#tab-uptime"
+													className="nav-link"
+													data-bs-toggle="tab"
+													aria-selected="false"
+													tabIndex={-1}
+													role="tab"
+												>
+													Uptime Check
+												</a>
+											</li>
+											<li className="nav-item" role="presentation">
+												<a
 													href="#tab-ssl"
 													className="nav-link"
 													data-bs-toggle="tab"
@@ -177,6 +222,7 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 										<div className="tab-content">
 											<div className="tab-pane active show" id="tab-details" role="tabpanel">
 												<DomainNamesField isWildcardPermitted dnsProviderWildcardSupported />
+								<NodeField />
 												<div className="row">
 													<div className="col-md-3">
 														<Field name="forwardScheme">
@@ -348,6 +394,84 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 											<div className="tab-pane" id="tab-locations" role="tabpanel">
 												<LocationsFields initialValues={data?.locations || []} />
 											</div>
+											<div className="tab-pane" id="tab-headers" role="tabpanel">
+												<HeadersField initialValues={data?.headers || []} />
+											</div>
+											<div className="tab-pane" id="tab-uptime" role="tabpanel">
+												<div className="my-3">
+													<div className="divide-y">
+														<div>
+															<label className="row" htmlFor="checkEnabled">
+																<span className="col">Enable uptime checks</span>
+																<span className="col-auto">
+																	<Field name="checkEnabled" type="checkbox">
+																		{({ field }: any) => (
+																			<label className="form-check form-check-single form-switch">
+																				<input
+																					{...field}
+																					id="checkEnabled"
+																					className={cn("form-check-input", { "bg-lime": field.checked })}
+																					type="checkbox"
+																				/>
+																			</label>
+																		)}
+																	</Field>
+																</span>
+															</label>
+														</div>
+													</div>
+													<Field name="checkPath">
+														{({ field }: any) => (
+															<div className="mb-3 mt-3">
+																<label className="form-label" htmlFor="checkPath">Check path</label>
+																<input
+																	id="checkPath"
+																	type="text"
+																	className="form-control"
+																	placeholder="/"
+																	{...field}
+																/>
+															</div>
+														)}
+													</Field>
+													<div className="row">
+														<div className="col-md-6">
+															<Field name="checkIntervalS">
+																{({ field }: any) => (
+																	<div className="mb-3">
+																		<label className="form-label" htmlFor="checkIntervalS">Check interval (seconds)</label>
+																		<input
+																			id="checkIntervalS"
+																			type="number"
+																			min={10}
+																			max={3600}
+																			className="form-control"
+																			{...field}
+																		/>
+																	</div>
+																)}
+															</Field>
+														</div>
+														<div className="col-md-6">
+															<Field name="expectedStatus">
+																{({ field }: any) => (
+																	<div className="mb-3">
+																		<label className="form-label" htmlFor="expectedStatus">Expected status</label>
+																		<input
+																			id="expectedStatus"
+																			type="text"
+																			className="form-control"
+																			placeholder="200-399"
+																			{...field}
+																		/>
+																		<small className="form-hint">e.g. 200-399 or 200,301,404</small>
+																	</div>
+																)}
+															</Field>
+														</div>
+													</div>
+												</div>
+											</div>
 											<div className="tab-pane" id="tab-ssl" role="tabpanel">
 												<SSLCertificateField
 													name="certificateId"
@@ -365,6 +489,36 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 													...values.proxyReadTimeout != null ? ["proxy_read_timeout"] : [],
 													...values.proxyBuffering ? ["proxy_buffering"] : [],
 												]} />
+												{id !== "new" && (
+													<div className="mt-4">
+														<label className="form-label fw-semibold">
+															<T id="maintenance-page.html-label" />
+														</label>
+														<textarea
+															className="form-control form-control-sm font-monospace"
+															rows={8}
+															value={maintenancePage}
+															onChange={(e) => setMaintenancePage(e.target.value)}
+															placeholder="Leave empty to use the built-in branded page"
+														/>
+														<Button
+															size="sm"
+															className="mt-2"
+															isLoading={maintenancePageSaving}
+															onClick={async () => {
+																setMaintenancePageSaving(true);
+																try {
+																	await saveMaintenancePage(id as number, maintenancePage);
+																	showObjectSuccess("proxy-host", "saved");
+																} finally {
+																	setMaintenancePageSaving(false);
+																}
+															}}
+														>
+															<T id="maintenance-page.save" />
+														</Button>
+													</div>
+												)}
 											</div>
 										</div>
 									</div>

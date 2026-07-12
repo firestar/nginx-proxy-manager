@@ -59,6 +59,16 @@
 		"certificate_id": {
 			"$ref": "../common.json#/properties/certificate_id"
 		},
+		"node_id": {
+			"type": ["integer", "null"],
+			"description": "Node this host is served from; null = the panel's local nginx",
+			"example": null
+		},
+		"node_all": {
+			"type": "boolean",
+			"description": "Replicate this host to every enrolled node (HA); overrides node_id",
+			"example": false
+		},
 		"ssl_forced": {
 			"$ref": "../common.json#/properties/ssl_forced"
 		},
@@ -210,6 +220,62 @@
 				}
 			],
 			"example": null
+		},
+		"maintenance_mode": {
+			"type": "boolean",
+			"description": "When true, host serves a 503 maintenance page instead of proxying",
+			"example": false
+		},
+		"check_enabled": {
+			"type": "boolean",
+			"description": "When true, the uptime checker probes this host's upstream",
+			"example": false
+		},
+		"check_path": {
+			"type": "string",
+			"description": "HTTP path to probe (default: /)",
+			"example": "/"
+		},
+		"check_interval_s": {
+			"type": "integer",
+			"description": "Probe interval in seconds (default: 60)",
+			"example": 60
+		},
+		"expected_status": {
+			"type": "string",
+			"description": "Expected HTTP status expression: range (200-399), single (200), or comma-list (200,301)",
+			"example": "200-399"
+		},
+		"headers": {
+			"type": ["array", "null"],
+			"description": "Custom request/response header manipulations",
+			"items": {
+				"type": "object",
+				"required": ["direction", "action", "name"],
+				"additionalProperties": false,
+				"properties": {
+					"direction": {
+						"type": "string",
+						"enum": ["request", "response"]
+					},
+					"action": {
+						"type": "string",
+						"enum": ["set", "remove"]
+					},
+					"name": {
+						"type": "string",
+						"pattern": "^[A-Za-z0-9-]+$",
+						"minLength": 1
+					},
+					"value": {
+						"type": "string"
+					}
+				}
+			},
+			"default": null,
+			"example": [
+				{"direction": "request", "action": "set", "name": "X-Real-IP", "value": "$remote_addr"}
+			]
 		}
 	}
 }

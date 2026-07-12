@@ -1,9 +1,33 @@
+import { useState } from "react";
 import { T } from "src/locale";
+import Backup from "./Backup";
 import DefaultSite from "./DefaultSite";
+import HighAvailability from "./HighAvailability";
+import Notifications from "./Notifications";
+import StatusPage from "./StatusPage";
+
+type SettingsSection = "default-site" | "notifications" | "status-page" | "backup" | "high-availability";
+
+const navItem = (
+	section: SettingsSection,
+	active: SettingsSection,
+	setSection: (s: SettingsSection) => void,
+	label: string,
+) => (
+	<a
+		href="#"
+		className={`list-group-item list-group-item-action d-flex align-items-center${section === active ? " active" : ""}`}
+		onClick={(e) => {
+			e.preventDefault();
+			setSection(section);
+		}}
+	>
+		{label}
+	</a>
+);
 
 export default function Layout() {
-	// Taken from https://preview.tabler.io/settings.html
-	// Refer to that when updating this content
+	const [section, setSection] = useState<SettingsSection>("default-site");
 
 	return (
 		<div className="card mt-4">
@@ -20,18 +44,20 @@ export default function Layout() {
 					<div className="col-12 col-md-3 border-end">
 						<div className="card-body mt-0 pt-0">
 							<div className="list-group list-group-transparent">
-								<a
-									href="#"
-									className="list-group-item list-group-item-action d-flex align-items-center active"
-									onClick={(e) => e.preventDefault()}
-								>
-									<T id="settings.default-site" />
-								</a>
+								{navItem("default-site", section, setSection, "Default Site")}
+								{navItem("notifications", section, setSection, "Notifications")}
+								{navItem("backup", section, setSection, "Backup & Restore")}
+								{navItem("high-availability", section, setSection, "High Availability")}
+								{navItem("backup", section, setSection, "Backup & Restore")}
 							</div>
 						</div>
 					</div>
 					<div className="col-12 col-md-9 d-flex flex-column">
-						<DefaultSite />
+						{section === "default-site" && <DefaultSite />}
+						{section === "notifications" && <Notifications />}
+						{section === "status-page" && <StatusPage />}
+						{section === "backup" && <Backup />}
+						{section === "high-availability" && <HighAvailability />}
 					</div>
 				</div>
 			</div>

@@ -2,6 +2,7 @@ import fs from "node:fs";
 import _ from "lodash";
 import errs from "../lib/error.js";
 import nginxLint from "./nginx-lint.js";
+import proxyHeader from "./proxy-header.js";
 import { castJsonIfNeed } from "../lib/helpers.js";
 import utils from "../lib/utils.js";
 import proxyHostModel from "../models/proxy_host.js";
@@ -9,6 +10,7 @@ import internalAuditLog from "./audit-log.js";
 import internalCertificate from "./certificate.js";
 import internalHost from "./host.js";
 import internalNginx from "./nginx.js";
+import internalNode from "./node.js";
 import internalTag from "./tag.js";
 import { applyHostVisibility, assertTagWrite, getUserTagIds } from "../lib/host-visibility.js";
 
@@ -43,6 +45,10 @@ const internalProxyHost = {
 				}
 			})
 			.then(() => {
+				// M1: hosts pinned to a remote node need DNS-challenge (or custom) certs
+				return internalNode.assertHostAllowed(thisData.node_id, createCertificate ? "new" : thisData.certificate_id, thisData.node_all);
+			})
+			.then(() => {
 				// Get a list of the domain names and check each of them against existing records
 				const domain_name_check_promises = [];
 
@@ -73,6 +79,7 @@ const internalProxyHost = {
 
 				// Reject if advanced_config duplicates a template-emitted directive.
 				nginxLint.check(thisData.advanced_config, thisData);
+				proxyHeader.validate(thisData.headers);
 				return proxyHostModel.query().insertAndFetch(thisData).then(utils.omitRow(omissions()));
 			})
 			.then((row) => {
@@ -175,13 +182,19 @@ const internalProxyHost = {
 			.then(() => {
 				return internalProxyHost.get(access, { id: thisData.id });
 			})
-			.then((row) => {
+			.then(async (row) => {
 				if (row.id !== thisData.id) {
 					// Sanity check that something crazy hasn't happened
 					throw new errs.InternalValidationError(
 						`Proxy Host could not be updated, IDs do not match: ${row.id} !== ${thisData.id}`,
 					);
 				}
+				// M1: hosts pinned to a remote node need DNS-challenge (or custom) certs
+				await internalNode.assertHostAllowed(
+					thisData.node_id !== undefined ? thisData.node_id : row.node_id,
+					createCertificate ? "new" : thisData.certificate_id !== undefined ? thisData.certificate_id : row.certificate_id,
+					thisData.node_all !== undefined ? thisData.node_all : row.node_all,
+				);
 
 				if (createCertificate) {
 					return internalCertificate
@@ -216,6 +229,7 @@ const internalProxyHost = {
 					_.assign({}, row, thisData),
 				);
 
+				proxyHeader.validate(typeof thisData.headers !== "undefined" ? thisData.headers : row.headers);
 				return proxyHostModel
 					.query()
 					.where({ id: thisData.id })
@@ -503,6 +517,100 @@ const internalProxyHost = {
 			return Number.parseInt(row.count, 10);
 		});
 	},
+
+	setMaintenance: (access, data) => {
+		const MAINTENANCE_DIR = "/data/nginx/maintenance";
+		const DEFAULT_PAGE = `${MAINTENANCE_DIR}/_default.html`;
+
+		return access
+			.can("proxy_hosts:update", data.id)
+			.then(() => {
+				return internalProxyHost.get(access, {
+					id: data.id,
+					expand: ["certificate", "owner", "access_list"],
+				});
+			})
+			.then((row) => {
+				if (!row?.id) {
+					throw new errs.ItemNotFoundError(data.id);
+				}
+				if (!row.enabled) {
+					throw new errs.ValidationError("Cannot set maintenance mode on a disabled host");
+				}
+
+				row.maintenance_mode = data.enabled ? 1 : 0;
+
+				return proxyHostModel
+					.query()
+					.where("id", row.id)
+					.patch({ maintenance_mode: data.enabled ? 1 : 0 })
+					.then(() => {
+						fs.mkdirSync(MAINTENANCE_DIR, { recursive: true });
+						if (!fs.existsSync(DEFAULT_PAGE)) {
+							fs.writeFileSync(
+								DEFAULT_PAGE,
+								`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Maintenance</title><style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f5f5f5}.box{background:#fff;padding:2rem 3rem;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.12);text-align:center}h1{color:#e67e22}p{color:#555}</style></head><body><div class="box"><h1>&#x1F6A7; Maintenance</h1><p>This service is temporarily unavailable.<br>Please try again later.</p></div></body></html>`,
+								{ encoding: "utf8" },
+							);
+						}
+						return internalNginx.configure(proxyHostModel, "proxy_host", row);
+					})
+					.then(() => {
+						return internalAuditLog.add(access, {
+							action: "updated",
+							object_type: "proxy-host",
+							object_id: row.id,
+							meta: { maintenance_mode: data.enabled },
+						});
+					});
+			})
+			.then(() => {
+				return true;
+			});
+	},
+
+	getMaintenancePage: (access, data) => {
+		const filePath = `/data/nginx/maintenance/${data.id}.html`;
+		return access
+			.can("proxy_hosts:update", data.id)
+			.then(() => {
+				if (fs.existsSync(filePath)) {
+					return { html: fs.readFileSync(filePath, { encoding: "utf8" }) };
+				}
+				return { html: "" };
+			});
+	},
+
+	setMaintenancePage: (access, data) => {
+		const MAINTENANCE_DIR = "/data/nginx/maintenance";
+		const filePath = `${MAINTENANCE_DIR}/${data.id}.html`;
+		return access
+			.can("proxy_hosts:update", data.id)
+			.then(() => {
+				return internalProxyHost.get(access, { id: data.id });
+			})
+			.then((row) => {
+				if (!row?.id) {
+					throw new errs.ItemNotFoundError(data.id);
+				}
+				fs.mkdirSync(MAINTENANCE_DIR, { recursive: true });
+				if (data.html && data.html.trim().length > 0) {
+					fs.writeFileSync(filePath, data.html, { encoding: "utf8" });
+				} else if (fs.existsSync(filePath)) {
+					fs.unlinkSync(filePath);
+				}
+				return internalAuditLog.add(access, {
+					action: "updated",
+					object_type: "proxy-host",
+					object_id: row.id,
+					meta: { maintenance_page_set: true },
+				});
+			})
+			.then(() => {
+				return true;
+			});
+	},
+
 };
 
 export default internalProxyHost;

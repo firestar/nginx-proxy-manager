@@ -9,6 +9,7 @@ export * from "./DNSCertificateModal";
 export * from "./EventDetailsModal";
 export * from "./HelpModal";
 export * from "./HTTPCertificateModal";
+export * from "./NodeModal";
 export * from "./PermissionsModal";
 export * from "./ProxyHostModal";
 export * from "./ProxyHostMetricsModal";

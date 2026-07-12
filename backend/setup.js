@@ -96,6 +96,25 @@ const setupDefaultSettings = async () => {
 			});
 		logger.info("Default settings added");
 	}
+
+	const relayRow = await settingModel
+		.query()
+		.select("id")
+		.where({ id: "acme-relay-url" })
+		.first();
+
+	if (!relayRow?.id) {
+		await settingModel
+			.query()
+			.insert({
+				id: "acme-relay-url",
+				name: "ACME Relay URL",
+				description: "Public URL of this panel; remote nodes relay HTTP-01 ACME challenges here",
+				value: "",
+				meta: {},
+			});
+		logger.info("ACME relay setting added");
+	}
 };
 
 /**

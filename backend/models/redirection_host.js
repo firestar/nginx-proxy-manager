@@ -12,6 +12,7 @@ import User from "./user.js";
 Model.knex(db());
 
 const boolFields = [
+	"node_all",
 	"is_deleted",
 	"enabled",
 	"preserve_path",

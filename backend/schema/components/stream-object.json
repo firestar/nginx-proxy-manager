@@ -73,6 +73,16 @@
 		"certificate_id": {
 			"$ref": "../common.json#/properties/certificate_id"
 		},
+		"node_id": {
+			"type": ["integer", "null"],
+			"description": "Node this host is served from; null = the panel's local nginx",
+			"example": null
+		},
+		"node_all": {
+			"type": "boolean",
+			"description": "Replicate this host to every enrolled node (HA); overrides node_id",
+			"example": false
+		},
 		"meta": {
 			"type": "object",
 			"example": {}

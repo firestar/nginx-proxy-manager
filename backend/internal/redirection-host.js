@@ -7,6 +7,7 @@ import internalAuditLog from "./audit-log.js";
 import internalCertificate from "./certificate.js";
 import internalHost from "./host.js";
 import internalNginx from "./nginx.js";
+import internalNode from "./node.js";
 import internalTag from "./tag.js";
 import { applyHostVisibility, assertTagWrite, getUserTagIds } from "../lib/host-visibility.js";
 
@@ -39,6 +40,10 @@ const internalRedirectionHost = {
 					const userTagIds = await access.loadUserTagIds();
 					assertTagWrite({ visibility: "tags", tagIds: tagIds || [], userTagIds });
 				}
+			})
+			.then(() => {
+				// M1: hosts pinned to a remote node need DNS-challenge (or custom) certs
+				return internalNode.assertHostAllowed(thisData.node_id, createCertificate ? "new" : thisData.certificate_id, thisData.node_all);
 			})
 			.then(() => {
 				// Get a list of the domain names and check each of them against existing records
@@ -170,7 +175,7 @@ const internalRedirectionHost = {
 			.then(() => {
 				return internalRedirectionHost.get(access, { id: thisData.id });
 			})
-			.then((row) => {
+			.then(async (row) => {
 				if (row.id !== thisData.id) {
 					// Sanity check that something crazy hasn't happened
 					throw new errs.InternalValidationError(
@@ -178,6 +183,12 @@ const internalRedirectionHost = {
 					);
 				}
 
+				// M1: hosts pinned to a remote node need DNS-challenge (or custom) certs
+				await internalNode.assertHostAllowed(
+					thisData.node_id !== undefined ? thisData.node_id : row.node_id,
+					createCertificate ? "new" : thisData.certificate_id !== undefined ? thisData.certificate_id : row.certificate_id,
+					thisData.node_all !== undefined ? thisData.node_all : row.node_all,
+				);
 				if (createCertificate) {
 					return internalCertificate
 						.createQuickCertificate(access, {

@@ -9,6 +9,7 @@ import {
 	Button,
 	DomainNamesField,
 	Loading,
+	NodeField,
 	NginxConfigField,
 	SSLCertificateField,
 	SSLOptionsFields,
@@ -40,6 +41,8 @@ const RedirectionHostModal = EasyModal.create(({ id, visible, remove }: Props) =
 		const { ...payload } = {
 			id: id === "new" ? undefined : id,
 			...values,
+			nodeId: values.nodeAll ? null : values.nodeId || null,
+			nodeAll: !!values.nodeAll,
 		};
 
 		setRedirectionHost(payload, {
@@ -75,6 +78,8 @@ const RedirectionHostModal = EasyModal.create(({ id, visible, remove }: Props) =
 							preservePath: data?.preservePath || false,
 							blockExploits: data?.blockExploits || false,
 							tagIds: data?.tags?.map((t) => t.id) || data?.tagIds || [],
+							nodeId: data?.nodeId || 0,
+							nodeAll: data?.nodeAll || false,
 							// SSL tab
 							certificateId: data?.certificateId || 0,
 							sslForced: data?.sslForced || false,
@@ -147,6 +152,7 @@ const RedirectionHostModal = EasyModal.create(({ id, visible, remove }: Props) =
 										<div className="tab-content">
 											<div className="tab-pane active show" id="tab-details" role="tabpanel">
 												<DomainNamesField isWildcardPermitted dnsProviderWildcardSupported />
+												<NodeField />
 												<div className="row">
 													<div className="col-md-4">
 														<Field name="forwardScheme">

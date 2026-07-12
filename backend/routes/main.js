@@ -15,12 +15,16 @@ import proxyHostsRoutes from "./nginx/proxy_hosts.js";
 import redirectionHostsRoutes from "./nginx/redirection_hosts.js";
 import streamsRoutes from "./nginx/streams.js";
 import tagsRoutes from "./nginx/tags.js";
+import nodesRoutes from "./nodes.js";
 import reportsRoutes from "./reports.js";
 import schemaRoutes from "./schema.js";
 import settingsRoutes from "./settings.js";
 import tokensRoutes from "./tokens.js";
 import usersRoutes from "./users.js";
 import versionRoutes from "./version.js";
+import notificationsRoutes from "./notifications.js";
+import statusRoutes from "./status.js";
+import backupRoutes from "./backup.js";
 
 const router = express.Router({
 	caseSensitive: true,
@@ -56,8 +60,12 @@ router.use("/tokens", tokensRoutes);
 router.use("/users", usersRoutes);
 router.use("/audit-log", auditLogRoutes);
 router.use("/reports", reportsRoutes);
+router.use("/status", statusRoutes);
 router.use("/settings", settingsRoutes);
+router.use("/notifications", notificationsRoutes);
+router.use("/backup", backupRoutes);
 router.use("/version", versionRoutes);
+router.use("/nodes", nodesRoutes);
 router.use("/nginx/proxy-hosts", proxyHostsRoutes);
 router.use("/nginx/redirection-hosts", redirectionHostsRoutes);
 router.use("/nginx/dead-hosts", deadHostsRoutes);

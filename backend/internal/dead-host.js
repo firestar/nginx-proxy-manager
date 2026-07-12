@@ -7,6 +7,7 @@ import internalAuditLog from "./audit-log.js";
 import internalCertificate from "./certificate.js";
 import internalHost from "./host.js";
 import internalNginx from "./nginx.js";
+import internalNode from "./node.js";
 import internalTag from "./tag.js";
 import { applyHostVisibility, assertTagWrite, getUserTagIds } from "../lib/host-visibility.js";
 
@@ -37,6 +38,8 @@ const internalDeadHost = {
 			assertTagWrite({ visibility: "tags", tagIds: tagIds || [], userTagIds });
 		}
 
+		// M1: hosts pinned to a remote node need DNS-challenge (or custom) certs
+		await internalNode.assertHostAllowed(data.node_id, createCertificate ? "new" : data.certificate_id, data.node_all);
 		// Get a list of the domain names and check each of them against existing records
 		const domainNameCheckPromises = [];
 
@@ -151,6 +154,12 @@ const internalDeadHost = {
 			);
 		}
 
+		// M1: hosts pinned to a remote node need DNS-challenge (or custom) certs
+		await internalNode.assertHostAllowed(
+			data.node_id !== undefined ? data.node_id : row.node_id,
+			createCertificate ? "new" : data.certificate_id !== undefined ? data.certificate_id : row.certificate_id,
+			data.node_all !== undefined ? data.node_all : row.node_all,
+		);
 		if (createCertificate) {
 			const cert = await internalCertificate.createQuickCertificate(access, {
 				domain_names: data.domain_names || row.domain_names,

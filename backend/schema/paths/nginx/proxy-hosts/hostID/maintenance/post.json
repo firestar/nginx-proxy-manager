@@ -1,0 +1,52 @@
+{
+	"operationId": "setProxyHostMaintenance",
+	"summary": "Toggle maintenance mode on a Proxy Host",
+	"tags": ["proxy-hosts"],
+	"security": [
+		{
+			"bearerAuth": ["proxy_hosts.manage"]
+		}
+	],
+	"parameters": [
+		{
+			"in": "path",
+			"name": "hostID",
+			"description": "The ID of the Proxy Host",
+			"schema": {
+				"type": "integer",
+				"minimum": 1
+			},
+			"required": true,
+			"example": 2
+		}
+	],
+	"requestBody": {
+		"required": true,
+		"content": {
+			"application/json": {
+				"schema": {
+					"type": "object",
+					"required": ["enabled"],
+					"properties": {
+						"enabled": {
+							"type": "boolean",
+							"description": "true to enable maintenance mode, false to disable"
+						}
+					}
+				}
+			}
+		}
+	},
+	"responses": {
+		"200": {
+			"description": "200 response",
+			"content": {
+				"application/json": {
+					"schema": {
+						"type": "boolean"
+					}
+				}
+			}
+		}
+	}
+}

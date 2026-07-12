@@ -18,6 +18,7 @@ import {
 	TagsFormatter,
 	TrueFalseFormatter,
 	ValueWithDateFormatter,
+	NodeCell,
 } from "src/components";
 import { TableLayout } from "src/components/Table/TableLayout";
 import { intl, T } from "src/locale";
@@ -133,6 +134,15 @@ export default function Table({
 				header: intl.formatMessage({ id: "column.ssl" }),
 				cell: (info: any) => {
 					return <CertificateFormatter certificate={info.getValue()} />;
+				},
+			}),
+			columnHelper.accessor((row: any) => row.nodeId, {
+				id: "nodeId",
+				enableSorting: false,
+				header: intl.formatMessage({ id: "column.node" }),
+				cell: (info: any) => {
+					const row = info.row.original;
+					return <NodeCell nodeId={row.nodeId} nodeAll={row.nodeAll} nodeStatus={row.meta?.nodeStatus} />;
 				},
 			}),
 			columnHelper.accessor((row: any) => row.tags, {

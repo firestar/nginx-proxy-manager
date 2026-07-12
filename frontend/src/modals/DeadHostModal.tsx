@@ -8,6 +8,7 @@ import {
 	Button,
 	DomainNamesField,
 	Loading,
+	NodeField,
 	NginxConfigField,
 	SSLCertificateField,
 	SSLOptionsFields,
@@ -38,6 +39,8 @@ const DeadHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 		const { ...payload } = {
 			id: id === "new" ? undefined : id,
 			...values,
+			nodeId: values.nodeAll ? null : values.nodeId || null,
+			nodeAll: !!values.nodeAll,
 		};
 
 		setDeadHost(payload, {
@@ -73,6 +76,8 @@ const DeadHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 							hstsEnabled: data?.hstsEnabled,
 							hstsSubdomains: data?.hstsSubdomains,
 							tagIds: data?.tags?.map((t) => t.id) || data?.tagIds || [],
+							nodeId: data?.nodeId || 0,
+							nodeAll: data?.nodeAll || false,
 							meta: data?.meta || {},
 						} as any
 					}
@@ -134,6 +139,7 @@ const DeadHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 										<div className="tab-content">
 											<div className="tab-pane active show" id="tab-details" role="tabpanel">
 												<DomainNamesField isWildcardPermitted dnsProviderWildcardSupported />
+												<NodeField />
 												<TagsField />
 											</div>
 											<div className="tab-pane" id="tab-ssl" role="tabpanel">

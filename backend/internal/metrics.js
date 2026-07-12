@@ -40,7 +40,7 @@ const hourBucket = (dt) => `${dt.slice(0, 13)}:00:00`;
  * @param   {Object} counts      {requests, bytes_sent, status_2xx, status_3xx, status_4xx, status_5xx, cache_hits}
  * @returns {Promise}
  */
-const upsertMetric = async (trx, proxyHostId, bucket, resolution, counts) => {
+const upsertMetric = async (trx, proxyHostId, nodeId, bucket, resolution, counts) => {
 	const existing = await trx("proxy_host_metric")
 		.where({ proxy_host_id: proxyHostId, bucket, resolution })
 		.first();
@@ -62,6 +62,7 @@ const upsertMetric = async (trx, proxyHostId, bucket, resolution, counts) => {
 			proxy_host_id: proxyHostId,
 			bucket,
 			resolution,
+			node_id: nodeId,
 			requests: counts.requests,
 			bytes_sent: counts.bytes_sent,
 			status_2xx: counts.status_2xx,
@@ -155,7 +156,7 @@ const processHost = async (host) => {
 	if (buckets.size > 0) {
 		await knex.transaction(async (trx) => {
 			for (const [bucket, counts] of buckets) {
-				await upsertMetric(trx, host.id, bucket, "minute", counts);
+				await upsertMetric(trx, host.id, null, bucket, "minute", counts);
 			}
 		});
 	}
@@ -209,7 +210,7 @@ const runRetention = async () => {
 		const hourMap = new Map();
 		for (const row of oldMinuteRows) {
 			const hb = hourBucket(row.bucket);
-			const key = `${row.proxy_host_id}|${hb}`;
+			const key = `${row.proxy_host_id}|${row.node_id ?? "null"}|${hb}`;
 			if (!hourMap.has(key)) {
 				hourMap.set(key, {
 					proxy_host_id: row.proxy_host_id,
@@ -217,6 +218,7 @@ const runRetention = async () => {
 					requests: 0,
 					bytes_sent: 0,
 					status_2xx: 0,
+					node_id: row.node_id ?? null,
 					status_3xx: 0,
 					status_4xx: 0,
 					status_5xx: 0,
@@ -235,7 +237,7 @@ const runRetention = async () => {
 
 		await knex.transaction(async (trx) => {
 			for (const [, agg] of hourMap) {
-				await upsertMetric(trx, agg.proxy_host_id, agg.bucket, "hour", agg);
+				await upsertMetric(trx, agg.proxy_host_id, agg.node_id ?? null, agg.bucket, "hour", agg);
 			}
 			// Delete the rolled-up minute rows
 			await trx("proxy_host_metric")
@@ -254,6 +256,36 @@ const runRetention = async () => {
 	if (deletedHour > 0) {
 		logger.info(`Pruned ${deletedHour} old hour-resolution metric rows`);
 	}
+};
+
+
+/**
+ * Ingest metric buckets shipped by a remote node agent.
+ * Validates each bucket belongs to a host pinned to nodeId.
+ *
+ * @param {number}  nodeId
+ * @param {Array}   buckets  [{proxyHostId, bucket, resolution, requests, bytes_sent, ...}]
+ */
+const ingestRemote = async (nodeId, buckets) => {
+	if (!Array.isArray(buckets) || buckets.length === 0) return;
+	const knex = db();
+	await knex.transaction(async (trx) => {
+		for (const b of buckets) {
+			const host = await trx("proxy_host")
+				.where({ id: b.proxyHostId, node_id: nodeId, is_deleted: 0, enabled: 1 })
+				.first();
+			if (!host) continue;
+			await upsertMetric(trx, b.proxyHostId, nodeId, b.bucket, b.resolution || "minute", {
+				requests: b.requests || 0,
+				bytes_sent: b.bytes_sent || 0,
+				status_2xx: b.status_2xx || 0,
+				status_3xx: b.status_3xx || 0,
+				status_4xx: b.status_4xx || 0,
+				status_5xx: b.status_5xx || 0,
+				cache_hits: b.cache_hits || 0,
+			});
+		}
+	});
 };
 
 const internalMetrics = {
@@ -277,6 +309,7 @@ const internalMetrics = {
 
 		ProxyHost.query()
 			.where({ is_deleted: 0, enabled: 1 })
+			.whereNull("node_id")
 			.then(async (hosts) => {
 				for (const host of hosts) {
 					try {
@@ -296,4 +329,5 @@ const internalMetrics = {
 	},
 };
 
+export { ingestRemote };
 export default internalMetrics;

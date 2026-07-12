@@ -1,0 +1,14 @@
+{
+	"name": "npm-agent",
+	"version": "1.0.0",
+	"description": "Nginx Proxy Manager remote node agent: receives config snapshots from the panel over an outbound WebSocket, applies them with staged nginx -t validation and rollback",
+	"license": "MIT",
+	"type": "module",
+	"main": "index.js",
+	"scripts": {
+		"start": "node index.js"
+	},
+	"dependencies": {
+		"ws": "^8.18.0"
+	}
+}

@@ -15,7 +15,7 @@ import { debug, ssl as logger } from "../logger.js";
 import certificateModel from "../models/certificate.js";
 import tokenModel from "../models/token.js";
 import userModel from "../models/user.js";
-import internalAuditLog from "./audit-log.js";
+import events, { CERTIFICATE_EXPIRING, CERTIFICATE_RENEWAL_FAILED } from "../lib/events.js";
 import internalHost from "./host.js";
 import internalNginx from "./nginx.js";
 
@@ -76,28 +76,44 @@ const internalCertificate = {
 					 */
 					let sequence = Promise.resolve();
 
-					certificates.forEach((certificate) => {
-						sequence = sequence.then(() =>
-							internalCertificate
-								.renew(
-									{
-										can: () =>
-											Promise.resolve({
-												permission_visibility: "all",
-											}),
-										token: tokenModel(),
-									},
-									{ id: certificate.id },
-								)
-								.catch((err) => {
-									// Don't want to stop the train here, just log the error
-									logger.error(err.message);
-								}),
-						);
+				certificates.forEach((certificate) => {
+					// Emit expiry alert (dispatcher dedupes once/day per cert)
+					const daysLeft = Math.max(0, Math.floor(
+						(new Date(certificate.expires_on).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+					));
+					events.emit(CERTIFICATE_EXPIRING, {
+						id: certificate.id,
+						domains: certificate.domain_names || [],
+						days: daysLeft,
+						expires_on: certificate.expires_on,
 					});
 
-					return sequence;
-				})
+					sequence = sequence.then(() =>
+						internalCertificate
+							.renew(
+								{
+									can: () =>
+										Promise.resolve({
+											permission_visibility: "all",
+										}),
+									token: tokenModel(),
+								},
+								{ id: certificate.id },
+							)
+							.catch((err) => {
+								// Don't want to stop the train here, just log the error
+								logger.error(err.message);
+								events.emit(CERTIFICATE_RENEWAL_FAILED, {
+									id: certificate.id,
+									domains: certificate.domain_names || [],
+									error: err.message,
+								});
+							}),
+					);
+				});
+
+				return sequence;
+			})
 				.then(() => {
 					logger.info("Completed SSL cert renew process");
 					internalCertificate.intervalProcessing = false;
@@ -170,6 +186,10 @@ const internalCertificate = {
 						await internalNginx.generateLetsEncryptRequestConfig(certificate);
 						await internalNginx.reload();
 						setTimeout(() => {}, 5000);
+						// Remote-node hosts relay HTTP-01 challenges back to the panel;
+						// make sure their agents have the relay location live before certbot
+						// fires (the host+relay was just scheduled but may not have applied).
+						await internalCertificate.prepareRemoteRelay(inUseResult);
 						// 4. Request cert
 						await internalCertificate.requestLetsEncryptSsl(certificate, user.email);
 						// 5. Remove LE config
@@ -1107,6 +1127,47 @@ const internalCertificate = {
 
 			if (inUseResult.dead_hosts.length) {
 				await internalNginx.bulkGenerateConfigs("dead_host", inUseResult.dead_hosts);
+			}
+		}
+	},
+
+	/**
+	 * Before an HTTP-01 challenge, push a fresh snapshot to every remote node
+	 * serving one of the in-use hosts and wait for the agent to apply it, so the
+	 * /.well-known/acme-challenge/ relay location is live when Let's Encrypt hits
+	 * the domain (which resolves to the remote node, not the panel).
+	 *
+	 * @param   {Object}  inUseResult
+	 * @returns {Promise}
+	 */
+	prepareRemoteRelay: async (inUseResult) => {
+		if (!inUseResult?.total_count) {
+			return;
+		}
+		const { default: internalNode } = await import("./node.js");
+		const hosts = [
+			...(inUseResult.proxy_hosts || []),
+			...(inUseResult.redirection_hosts || []),
+			...(inUseResult.dead_hosts || []),
+		];
+		const nodeIds = new Set();
+		let anyAll = false;
+		for (const h of hosts) {
+			if (h.node_all) {
+				anyAll = true;
+			} else if (h.node_id) {
+				nodeIds.add(h.node_id);
+			}
+		}
+		if (anyAll) {
+			for (const id of await internalNode.enrolledNodeIds()) {
+				nodeIds.add(id);
+			}
+		}
+		for (const id of nodeIds) {
+			const res = await internalNode.pushNodeAndWait(id);
+			if (!res.ok) {
+				logger.warn(`HTTP-01 relay prep: node ${id} not ready (${res.error}); challenge may fail`);
 			}
 		}
 	},

@@ -124,6 +124,13 @@ export interface Certificate {
 	redirectionHosts?: RedirectionHost[];
 }
 
+export interface ProxyHeader {
+	direction: "request" | "response";
+	action: "set" | "remove";
+	name: string;
+	value: string;
+}
+
 export interface ProxyLocation {
 	path: string;
 	advancedConfig: string;
@@ -151,6 +158,7 @@ export interface ProxyHost {
 	allowWebsocketUpgrade: boolean;
 	http2Support: boolean;
 	enabled: boolean;
+	maintenanceMode: boolean;
 	locations?: ProxyLocation[];
 	hstsEnabled: boolean;
 	hstsSubdomains: boolean;
@@ -160,7 +168,14 @@ export interface ProxyHost {
 	proxySendTimeout?: number | null;
 	proxyReadTimeout?: number | null;
 	proxyBuffering?: string | null;
+	checkEnabled?: boolean;
+	checkPath?: string;
+	checkIntervalS?: number;
+	expectedStatus?: string;
+	headers?: ProxyHeader[] | null;
 	tagIds?: number[];
+	nodeId?: number | null;
+	nodeAll?: boolean;
 	// Expansions:
 	owner?: User;
 	accessList?: AccessList;
@@ -183,6 +198,8 @@ export interface DeadHost {
 	hstsEnabled: boolean;
 	hstsSubdomains: boolean;
 	tagIds?: number[];
+	nodeId?: number | null;
+	nodeAll?: boolean;
 	// Expansions:
 	owner?: User;
 	certificate?: Certificate;
@@ -209,6 +226,8 @@ export interface RedirectionHost {
 	hstsEnabled: boolean;
 	hstsSubdomains: boolean;
 	tagIds?: number[];
+	nodeId?: number | null;
+	nodeAll?: boolean;
 	// Expansions:
 	owner?: User;
 	certificate?: Certificate;
@@ -229,6 +248,8 @@ export interface Stream {
 	enabled: boolean;
 	certificateId: number;
 	tagIds?: number[];
+	nodeId?: number | null;
+	nodeAll?: boolean;
 	// Expansions:
 	owner?: User;
 	certificate?: Certificate;
@@ -247,4 +268,77 @@ export interface DNSProvider {
 	id: string;
 	name: string;
 	credentials: string;
+}
+
+export interface NotificationChannel {
+	id?: number;
+	createdOn?: string;
+	modifiedOn?: string;
+	name: string;
+	type: "webhook" | "slack" | "discord" | "telegram" | "ntfy" | "email";
+	config: Record<string, any>;
+	events: string[];
+	enabled: boolean;
+}
+
+export interface NotificationLog {
+	id: number;
+	channelId: number;
+	event: string;
+	status: "sent" | "failed";
+	detail: string | null;
+	createdOn: string;
+}
+
+export interface UpstreamStatus {
+	id: number;
+	domainNames: string[];
+	status: "up" | "down" | "unknown";
+	latency_ms: number | null;
+	last_checked: string | null;
+	uptime: {
+		d1: number;
+		d7: number;
+		d90: number;
+	};
+}
+
+export interface PublicStatusHost {
+	name: string;
+	status: "up" | "down" | "unknown";
+	uptime: {
+		d1: number;
+		d7: number;
+		d90: number;
+	};
+}
+
+export interface PublicStatusPage {
+	title: string;
+	generated_on: string;
+	hosts: PublicStatusHost[];
+}
+
+export interface StatusPageMeta {
+	slug: string;
+	title: string;
+	tag_id: number | null;
+	host_ids: number[];
+}
+
+export interface NPMNode {
+	id: number;
+	createdOn: string;
+	modifiedOn: string;
+	name: string;
+	status: "pending" | "online" | "offline";
+	lastSeen: string | null;
+	version: string | null;
+	configVersion: number;
+	meta: Record<string, any>;
+	/** Live WebSocket session present right now */
+	connected?: boolean;
+	/** One-time enrollment token. Only present in create/token-regenerate responses, never again. */
+	token?: string;
+	setupCommand?: string;
 }

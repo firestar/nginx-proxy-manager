@@ -286,6 +286,9 @@ export default function (tokenString) {
 			"streams",
 			"access_lists",
 			"certificates",
+			"notifications",
+			"backup",
+			"nodes",
 		]) {
 			const base = isAdmin ? 2 : Math.max(levels.indexOf(permissions[resource]), 0);
 			capped[resource] = levels[Math.min(base, granted[resource] || 0)];
@@ -356,6 +359,9 @@ export default function (tokenString) {
 						permission_streams: eff.permissions.streams,
 						permission_access_lists: eff.permissions.access_lists,
 						permission_certificates: eff.permissions.certificates,
+						permission_notifications: eff.permissions.notifications,
+						permission_backup: eff.permissions.backup,
+						permission_nodes: eff.permissions.nodes,
 					},
 				};
 

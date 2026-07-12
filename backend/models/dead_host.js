@@ -11,7 +11,7 @@ import User from "./user.js";
 
 Model.knex(db());
 
-const boolFields = ["is_deleted", "ssl_forced", "http2_support", "enabled", "hsts_enabled", "hsts_subdomains"];
+const boolFields = ["is_deleted", "ssl_forced", "http2_support", "enabled", "hsts_enabled", "hsts_subdomains", "node_all"];
 
 class DeadHost extends Model {
 	$beforeInsert() {

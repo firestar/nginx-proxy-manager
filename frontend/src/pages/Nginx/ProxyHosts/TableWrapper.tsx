@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import Alert from "react-bootstrap/Alert";
 import { useSearchParams } from "react-router-dom";
-import { deleteProxyHost, type Tag, toggleProxyHost } from "src/api/backend";
+import { deleteProxyHost, setMaintenanceMode, type Tag, toggleProxyHost } from "src/api/backend";
 import { Button, HasPermission, LoadingPage, TagFilter } from "src/components";
 import { useProxyHosts } from "src/hooks";
 import { T } from "src/locale";
@@ -49,6 +49,13 @@ export default function TableWrapper() {
 		queryClient.invalidateQueries({ queryKey: ["proxy-hosts"] });
 		queryClient.invalidateQueries({ queryKey: ["proxy-host", id] });
 		showObjectSuccess("proxy-host", enabled ? "enabled" : "disabled");
+	};
+
+	const handleMaintenanceToggle = async (id: number, enabled: boolean) => {
+		await setMaintenanceMode(id, enabled);
+		queryClient.invalidateQueries({ queryKey: ["proxy-hosts"] });
+		queryClient.invalidateQueries({ queryKey: ["proxy-host", id] });
+		showObjectSuccess("proxy-host", enabled ? "maintenance-enabled" : "maintenance-disabled");
 	};
 
 	const handleTagClick = (tag: Tag) => {
@@ -164,6 +171,7 @@ export default function TableWrapper() {
 					onTagClick={handleTagClick}
 					onSelectionChange={setSelectedIds}
 					onMetrics={(id: number) => showProxyHostMetricsModal(id)}
+					onMaintenanceToggle={handleMaintenanceToggle}
 				/>
 			</div>
 		</div>

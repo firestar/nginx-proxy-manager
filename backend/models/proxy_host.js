@@ -13,6 +13,7 @@ import User from "./user.js";
 Model.knex(db());
 
 const boolFields = [
+	"node_all",
 	"is_deleted",
 	"ssl_forced",
 	"caching_enabled",
@@ -22,7 +23,9 @@ const boolFields = [
 	"enabled",
 	"hsts_enabled",
 	"hsts_subdomains",
-	"trust_forwarded_proto",
+	"maintenance_mode",
+	"check_enabled",
+	"maintenance_mode",
 ];
 
 class ProxyHost extends Model {
@@ -71,7 +74,7 @@ class ProxyHost extends Model {
 	}
 
 	static get jsonAttributes() {
-		return ["domain_names", "meta", "locations"];
+		return ["domain_names", "meta", "locations", "headers"];
 	}
 
 	static get defaultAllowGraph() {

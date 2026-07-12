@@ -1,0 +1,150 @@
+#!/bin/bash
+# Multi-node integration test (P8-M1 acceptance):
+#   1. enroll a second (agent) container against the dev panel
+#   2. pin a proxy host to it and verify the config applies + serves
+#   3. push a broken config and verify the agent rolls back + the panel
+#      records the error (node.config_failed path)
+#   4. kill the agent and verify the node goes offline
+#
+# Prerequisites: the dev stack is running (scripts/start-dev) and the panel
+# API is reachable. Usage:
+#   NPM_URL=http://localhost:3081 NPM_EMAIL=... NPM_PASSWORD=... scripts/ci/test-multinode
+set -e
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$DIR/../.."
+
+NPM_URL="${NPM_URL:-http://localhost:3081}"
+NPM_EMAIL="${NPM_EMAIL:-admin@example.com}"
+NPM_PASSWORD="${NPM_PASSWORD:-changeme}"
+AGENT_HTTP_PORT="${AGENT_HTTP_PORT:-3082}"
+COMPOSE="docker compose -f docker/docker-compose.dev.yml"
+TEST_DOMAIN="multinode-test.example.com"
+HA_DOMAIN="multinode-ha.example.com"
+
+BLUE='\E[1;34m'
+RED='\E[1;31m'
+GREEN='\E[1;32m'
+RESET='\E[0m'
+
+step() { echo -e "${BLUE}❯ $1${RESET}"; }
+pass() { echo -e "${GREEN}✔ $1${RESET}"; }
+fail() { echo -e "${RED}✘ $1${RESET}"; exit 1; }
+
+api() {
+	local method="$1" path="$2" body="${3:-}"
+	if [ -n "$body" ]; then
+		curl -sf -X "$method" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+			-d "$body" "$NPM_URL/api$path"
+	else
+		curl -sf -X "$method" -H "Authorization: Bearer $TOKEN" "$NPM_URL/api$path"
+	fi
+}
+
+wait_for() {
+	local desc="$1" tries="$2" cmd="$3"
+	for _ in $(seq 1 "$tries"); do
+		if eval "$cmd" >/dev/null 2>&1; then
+			return 0
+		fi
+		sleep 2
+	done
+	fail "timed out waiting for: $desc"
+}
+
+step "Logging in to $NPM_URL"
+TOKEN=$(curl -sf -X POST -H "Content-Type: application/json" \
+	-d "{\"identity\":\"$NPM_EMAIL\",\"secret\":\"$NPM_PASSWORD\"}" \
+	"$NPM_URL/api/tokens" | jq -r .token)
+[ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || fail "login failed"
+pass "authenticated"
+
+step "Creating node"
+NODE_JSON=$(api POST /nodes '{"name":"integration-node"}')
+NODE_ID=$(echo "$NODE_JSON" | jq -r .id)
+AGENT_TOKEN=$(echo "$NODE_JSON" | jq -r .token)
+[ -n "$AGENT_TOKEN" ] && [ "$AGENT_TOKEN" != "null" ] || fail "node create returned no token"
+pass "node $NODE_ID created, one-time token issued"
+
+step "Starting npm-agent container"
+export AGENT_TOKEN
+$COMPOSE up -d --build agent
+wait_for "node online" 30 "api GET /nodes/$NODE_ID | jq -e '.status == \"online\"'"
+pass "agent enrolled and online"
+
+step "Pinning a proxy host to the node"
+HOST_JSON=$(api POST /nginx/proxy-hosts "{\"domain_names\":[\"$TEST_DOMAIN\"],\"forward_scheme\":\"http\",\"forward_host\":\"fullstack\",\"forward_port\":81,\"node_id\":$NODE_ID}")
+HOST_ID=$(echo "$HOST_JSON" | jq -r .id)
+[ -n "$HOST_ID" ] && [ "$HOST_ID" != "null" ] || fail "host create failed"
+wait_for "config v1+ applied" 30 \
+	"api GET /nodes/$NODE_ID | jq -e '.meta.applied_version >= 1'"
+pass "host $HOST_ID applied on node"
+
+step "Verifying the agent serves the host"
+wait_for "agent serves $TEST_DOMAIN" 15 \
+	"curl -sf -o /dev/null -H 'Host: $TEST_DOMAIN' http://localhost:$AGENT_HTTP_PORT/"
+pass "agent serves $TEST_DOMAIN on port $AGENT_HTTP_PORT"
+
+step "Pushing a broken config (expect agent rollback + panel error)"
+api PUT "/nginx/proxy-hosts/$HOST_ID" '{"advanced_config":"proxy_pass htp://broken-scheme;"}' >/dev/null || true
+wait_for "node records config_failed" 30 \
+	"api GET /nodes/$NODE_ID | jq -e '.meta.last_error != null'"
+pass "panel recorded apply error: $(api GET /nodes/$NODE_ID | jq -r '.meta.last_error.error' | head -1)"
+
+step "Verifying rollback kept the previous config serving"
+curl -sf -o /dev/null -H "Host: $TEST_DOMAIN" "http://localhost:$AGENT_HTTP_PORT/" \
+	|| fail "previous snapshot no longer serving after rollback"
+pass "old snapshot still serving (zero-downtime rollback)"
+
+step "Repairing the host config"
+api PUT "/nginx/proxy-hosts/$HOST_ID" '{"advanced_config":""}' >/dev/null
+wait_for "node error cleared" 30 \
+	"api GET /nodes/$NODE_ID | jq -e '.meta.last_error == null'"
+pass "config repaired and applied"
+
+step "Configuring the ACME relay URL (HTTP-01 relay setting)"
+api PUT /settings/acme-relay-url "{\"value\":\"$NPM_URL\"}" >/dev/null
+RELAY_VAL=$(api GET /settings/acme-relay-url | jq -r .value)
+[ "$RELAY_VAL" = "$NPM_URL" ] || fail "acme-relay-url did not persist"
+pass "acme-relay-url set to $NPM_URL"
+
+step "Creating a replicate-to-all (HA) proxy host"
+HA_JSON=$(api POST /nginx/proxy-hosts "{\"domain_names\":[\"$HA_DOMAIN\"],\"forward_scheme\":\"http\",\"forward_host\":\"fullstack\",\"forward_port\":81,\"node_all\":true}")
+HA_HOST_ID=$(echo "$HA_JSON" | jq -r .id)
+[ -n "$HA_HOST_ID" ] && [ "$HA_HOST_ID" != "null" ] || fail "HA host create failed"
+wait_for "HA host serves on the node" 30 \
+	"curl -sf -o /dev/null -H 'Host: $HA_DOMAIN' http://localhost:$AGENT_HTTP_PORT/"
+pass "replicate-to-all host $HA_HOST_ID served from the node"
+
+step "Verifying per-node apply status recorded on the HA host"
+wait_for "node_status has an entry for node $NODE_ID" 30 \
+	"api GET /nginx/proxy-hosts/$HA_HOST_ID | jq -e '.meta.node_status[\"'$NODE_ID'\"].ok == true'"
+pass "per-node status recorded (node $NODE_ID ok)"
+
+step "Verifying the HTTP-01 relay location is served by the agent"
+# The relay returns whatever the panel answers for the challenge path (404 when
+# no challenge is active) rather than the proxied upstream — assert it responds.
+curl -s -o /dev/null -w '%{http_code}' -H "Host: $HA_DOMAIN" \
+	"http://localhost:$AGENT_HTTP_PORT/.well-known/acme-challenge/probe" | grep -qE '^(404|200)$' \
+	&& pass "agent relays /.well-known/acme-challenge/ back to the panel" \
+	|| fail "acme-challenge relay location not serving on the agent"
+
+# NOTE: full two-agent HA (kill one node, the other keeps serving) needs a
+# second npm-agent service in docker-compose.dev.yml; run this script against a
+# two-agent stack to exercise the degraded-state path end to end.
+
+step "Killing the agent (expect node offline)"
+$COMPOSE stop agent >/dev/null
+# offline = 3 missed 30s heartbeats or socket close; socket close is immediate
+wait_for "node offline" 60 "api GET /nodes/$NODE_ID | jq -e '.status == \"offline\"'"
+pass "node marked offline"
+
+step "Cleaning up"
+api DELETE "/nginx/proxy-hosts/$HOST_ID" >/dev/null || true
+api DELETE "/nginx/proxy-hosts/$HA_HOST_ID" >/dev/null || true
+api PUT /settings/acme-relay-url '{"value":""}' >/dev/null || true
+api DELETE "/nodes/$NODE_ID" >/dev/null || true
+$COMPOSE rm -sf agent >/dev/null || true
+pass "cleanup done"
+
+echo -e "${GREEN}Multi-node integration test PASSED${RESET}"

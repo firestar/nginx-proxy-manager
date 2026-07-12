@@ -1,9 +1,14 @@
 #!/usr/bin/env node
 
 import app from "./app.js";
+import internalAgentWs from "./internal/agent-ws.js";
+import internalBackup from "./internal/backup.js";
 import internalCertificate from "./internal/certificate.js";
 import internalIpRanges from "./internal/ip_ranges.js";
 import internalMetrics from "./internal/metrics.js";
+import internalNode from "./internal/node.js";
+import internalNotification from "./internal/notification.js";
+import internalUptime from "./internal/uptime.js";
 import { global as logger } from "./logger.js";
 import { migrateUp } from "./migrate.js";
 import { getCompiledSchema } from "./schema/index.js";
@@ -29,6 +34,10 @@ async function appStart() {
 			internalCertificate.initTimer();
 			internalIpRanges.initTimer();
 			internalMetrics.initTimer();
+			internalUptime.initTimer();
+			internalBackup.initTimer();
+			internalNode.initTimer();
+			internalNotification.subscribe();
 			const server = app.listen(3000, () => {
 				logger.info(`Backend PID ${process.pid} listening on port 3000 ...`);
 
@@ -40,6 +49,7 @@ async function appStart() {
 					});
 				});
 			});
+			internalAgentWs.setup(server);
 		})
 		.catch((err) => {
 			logger.error(`Startup Error: ${err.message}`, err);

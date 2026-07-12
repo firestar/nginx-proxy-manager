@@ -1,4 +1,4 @@
-import { IconChartBar, IconDotsVertical, IconEdit, IconPower, IconTrash } from "@tabler/icons-react";
+import { IconChartBar, IconDotsVertical, IconEdit, IconPower, IconTool, IconTrash } from "@tabler/icons-react";
 import {
 	createColumnHelper,
 	getCoreRowModel,
@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-table";
 import { useEffect, useMemo, useState } from "react";
 import type { ProxyHost, Tag } from "src/api/backend";
+import { useUptimeReport } from "src/hooks";
 import {
 	AccessListFormatter,
 	CertificateFormatter,
@@ -17,6 +18,7 @@ import {
 	GravatarFormatter,
 	HasPermission,
 	NginxOnlineFormatter,
+	NodeCell,
 	TagsFormatter,
 	TrueFalseFormatter,
 } from "src/components";
@@ -35,6 +37,7 @@ interface Props {
 	onTagClick?: (tag: Tag) => void;
 	onSelectionChange?: (ids: number[]) => void;
 	onMetrics?: (id: number) => void;
+	onMaintenanceToggle?: (id: number, enabled: boolean) => void;
 }
 export default function Table({
 	data,
@@ -47,7 +50,10 @@ export default function Table({
 	onTagClick,
 	onSelectionChange,
 	onMetrics,
+	onMaintenanceToggle,
 }: Props) {
+	const { data: uptimeData = [] } = useUptimeReport();
+	const uptimeMap = useMemo(() => new Map(uptimeData.map((s: any) => [s.id, s.status])), [uptimeData]);
 	const columnHelper = createColumnHelper<ProxyHost>();
 	const columns = useMemo(
 		() => [
@@ -120,6 +126,15 @@ export default function Table({
 					return <CertificateFormatter certificate={info.getValue()} />;
 				},
 			}),
+			columnHelper.accessor((row: any) => row.nodeId, {
+				id: "nodeId",
+				enableSorting: false,
+				header: intl.formatMessage({ id: "column.node" }),
+				cell: (info: any) => {
+					const row = info.row.original;
+					return <NodeCell nodeId={row.nodeId} nodeAll={row.nodeAll} nodeStatus={row.meta?.nodeStatus} />;
+				},
+			}),
 			columnHelper.accessor((row: any) => row.accessList, {
 				id: "accessList",
 				enableSorting: false,
@@ -140,7 +155,21 @@ export default function Table({
 				id: "enabled",
 				header: intl.formatMessage({ id: "column.status" }),
 				cell: (info: any) => {
-					return <TrueFalseFormatter value={info.getValue()} trueLabel="online" falseLabel="offline" />;
+					return (
+						<>
+							<TrueFalseFormatter value={info.getValue()} trueLabel="online" falseLabel="offline" />
+							{info.row.original.maintenanceMode && (
+								<span className="badge bg-yellow text-yellow-fg ms-1">
+									<T id="badge.maintenance" />
+								</span>
+							)}
+							{info.row.original.checkEnabled && (
+								<span className="status status-sm ms-1" title={`Upstream: ${uptimeMap.get(info.row.original.id) ?? "unknown"}`}>
+									<span className={`status-dot status-dot-animated ${uptimeMap.get(info.row.original.id) === "up" ? "bg-lime" : "bg-red"}`} />
+								</span>
+							)}
+						</>
+					);
 				},
 			}),
 			columnHelper.accessor((row: any) => row.meta, {
@@ -196,6 +225,19 @@ export default function Table({
 									<T id="action.metrics" />
 								</a>
 								<HasPermission section={PROXY_HOSTS} permission={MANAGE} hideError>
+									{info.row.original.enabled && (
+										<a
+											className="dropdown-item"
+											href="#"
+											onClick={(e) => {
+												e.preventDefault();
+												onMaintenanceToggle?.(info.row.original.id, !info.row.original.maintenanceMode);
+											}}
+										>
+											<IconTool size={16} />
+											<T id={info.row.original.maintenanceMode ? "action.maintenance-off" : "action.maintenance-on"} />
+										</a>
+									)}
 									<a
 										className="dropdown-item"
 										href="#"
@@ -229,7 +271,7 @@ export default function Table({
 				},
 			}),
 		],
-		[columnHelper, onEdit, onDisableToggle, onDelete, onTagClick, onMetrics],
+		[columnHelper, onEdit, onDisableToggle, onDelete, onTagClick, onMetrics, onMaintenanceToggle],
 	);
 
 	const [sorting, setSorting] = useState<SortingState>([]);

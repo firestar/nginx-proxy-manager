@@ -9,6 +9,7 @@ export * from "./Loading";
 export * from "./LoadingPage";
 export * from "./LocalePicker";
 export * from "./NavLink";
+export * from "./NodeCell";
 export * from "./Page";
 export * from "./SiteContainer";
 export * from "./SiteFooter";

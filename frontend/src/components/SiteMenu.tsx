@@ -3,6 +3,7 @@ import {
 	IconDeviceDesktop,
 	IconHome,
 	IconLock,
+	IconServer2,
 	IconSettings,
 	IconShield,
 	IconStack2,
@@ -94,6 +95,12 @@ const menuItems: MenuItem[] = [
 		label: "certificates",
 		permissionSection: CERTIFICATES,
 		permission: VIEW,
+	},
+	{
+		to: "/nodes",
+		icon: IconServer2,
+		label: "nodes",
+		permissionSection: ADMIN,
 	},
 	{
 		to: "/users",

@@ -5,6 +5,7 @@ import _ from "lodash";
 import errs from "../lib/error.js";
 import utils from "../lib/utils.js";
 import { debug, nginx as logger } from "../logger.js";
+import events, { HOST_OFFLINE, HOST_ONLINE } from "../lib/events.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -36,9 +37,16 @@ const internalNginx = {
 	 * @returns {Promise}
 	 */
 	configure: async (model, host_type, host) => {
+		// Hosts pinned to a remote node are rendered and pushed to the agent over
+		// WebSocket; the agent stages, tests and acks. Nothing changes locally.
+		if (host.node_id || host.node_all) {
+			const { default: internalNode } = await import("./node.js");
+			return internalNode.applyRemoteHost(model, host_type, host);
+		}
 		// 1. Baseline: global nginx must be OK before we touch anything.
 		await internalNginx.test();
 
+		const wasOnline = host.meta?.nginx_online;
 		const filename = internalNginx.getConfigName(
 			internalNginx.getFileFriendlyHostType(host_type),
 			host.id,
@@ -77,6 +85,9 @@ const internalNginx = {
 				nginx_err: fatalMsg,
 			});
 			await model.query().where("id", host.id).patch({ meta: combined_meta });
+			if (wasOnline !== false) {
+				events.emit(HOST_OFFLINE, { host_type, id: host.id, domains: host.domain_names || [], error: fatalMsg });
+			}
 
 			throw new errs.ValidationError(fatalMsg);
 		}
@@ -95,6 +106,9 @@ const internalNginx = {
 			nginx_err: null,
 		});
 		await model.query().where("id", host.id).patch({ meta: combined_meta });
+		if (wasOnline === false) {
+			events.emit(HOST_ONLINE, { host_type, id: host.id, domains: host.domain_names || [] });
+		}
 		await internalNginx.reload();
 
 		return combined_meta;
@@ -184,83 +198,75 @@ const internalNginx = {
 
 	/**
 	 * @param   {String}  host_type
-	 * @param   {Object}  host
-	 * @returns {Promise}
+	 * @param   {Object}  host_row
+	 * @param   {Object}  [extra]      Extra template context (e.g. acme_relay_url for remote-node snapshots)
+	 * @returns {Promise<String>}
 	 */
-	generateConfig: (host_type, host_row) => {
+	renderConfig: async (host_type, host_row, extra) => {
 		// Prevent modifying the original object:
 		const host = JSON.parse(JSON.stringify(host_row));
+		if (extra) {
+			Object.assign(host, extra);
+		}
 		const nice_host_type = internalNginx.getFileFriendlyHostType(host_type);
 
-		debug(logger, `Generating ${nice_host_type} Config:`, JSON.stringify(host, null, 2));
-
 		const renderEngine = utils.getRenderEngine();
+		let template;
+		try {
+			template = fs.readFileSync(`${__dirname}/../templates/${nice_host_type}.conf`, { encoding: "utf8" });
+		} catch (err) {
+			throw new errs.ConfigurationError(err.message);
+		}
 
-		return new Promise((resolve, reject) => {
-			let template = null;
-			const filename = internalNginx.getConfigName(nice_host_type, host.id);
-
-			try {
-				template = fs.readFileSync(`${__dirname}/../templates/${nice_host_type}.conf`, { encoding: "utf8" });
-			} catch (err) {
-				reject(new errs.ConfigurationError(err.message));
-				return;
+		// Manipulate the data a bit before sending it to the template
+		if (nice_host_type !== "default") {
+			host.use_default_location = true;
+			if (typeof host.advanced_config !== "undefined" && host.advanced_config) {
+				host.use_default_location = !internalNginx.advancedConfigHasDefaultLocation(host.advanced_config);
 			}
+		}
 
-			let locationsPromise;
-			let origLocations;
+		// For redirection hosts, if the scheme is not http or https, set it to $scheme
+		if (nice_host_type === "redirection_host" && ["http", "https"].indexOf(host.forward_scheme.toLowerCase()) === -1) {
+			host.forward_scheme = "$scheme";
+		}
 
-			// Manipulate the data a bit before sending it to the template
-			if (nice_host_type !== "default") {
-				host.use_default_location = true;
-				if (typeof host.advanced_config !== "undefined" && host.advanced_config) {
-					host.use_default_location = !internalNginx.advancedConfigHasDefaultLocation(host.advanced_config);
+		if (host.locations) {
+			// Allow someone who is using / custom location path to use it, and skip the default / location
+			_.map(host.locations, (location) => {
+				if (location.path === "/") {
+					host.use_default_location = false;
 				}
-			}
-
-			// For redirection hosts, if the scheme is not http or https, set it to $scheme
-			if (nice_host_type === "redirection_host" && ['http', 'https'].indexOf(host.forward_scheme.toLowerCase()) === -1) {
-				host.forward_scheme = "$scheme";
-			}
-
-			if (host.locations) {
-				//logger.info ('host.locations = ' + JSON.stringify(host.locations, null, 2));
-				origLocations = [].concat(host.locations);
-				locationsPromise = internalNginx.renderLocations(host).then((renderedLocations) => {
-					host.locations = renderedLocations;
-				});
-
-				// Allow someone who is using / custom location path to use it, and skip the default / location
-				_.map(host.locations, (location) => {
-					if (location.path === "/") {
-						host.use_default_location = false;
-					}
-				});
-			} else {
-				locationsPromise = Promise.resolve();
-			}
-
-			// Set the IPv6 setting for the host
-			host.ipv6 = internalNginx.ipv6Enabled();
-
-			locationsPromise.then(() => {
-				renderEngine
-					.parseAndRender(template, host)
-					.then((config_text) => {
-						fs.writeFileSync(filename, config_text, { encoding: "utf8" });
-						debug(logger, "Wrote config:", filename, config_text);
-
-						// Restore locations array
-						host.locations = origLocations;
-
-						resolve(true);
-					})
-					.catch((err) => {
-						debug(logger, `Could not write ${filename}:`, err.message);
-						reject(new errs.ConfigurationError(err.message));
-					});
 			});
-		});
+			host.locations = await internalNginx.renderLocations(host);
+		}
+
+		// Set the IPv6 setting for the host
+		host.ipv6 = internalNginx.ipv6Enabled();
+
+		return renderEngine.parseAndRender(template, host);
+	},
+
+	/**
+	 * @param   {String}  host_type
+	 * @param   {Object}  host_row
+	 * @returns {Promise}
+	 */
+	generateConfig: async (host_type, host_row) => {
+		const nice_host_type = internalNginx.getFileFriendlyHostType(host_type);
+		debug(logger, `Generating ${nice_host_type} Config:`, JSON.stringify(host_row, null, 2));
+
+		const filename = internalNginx.getConfigName(nice_host_type, host_row.id);
+		const config_text = await internalNginx.renderConfig(host_type, host_row);
+
+		try {
+			fs.writeFileSync(filename, config_text, { encoding: "utf8" });
+			debug(logger, "Wrote config:", filename, config_text);
+		} catch (err) {
+			debug(logger, `Could not write ${filename}:`, err.message);
+			throw new errs.ConfigurationError(err.message);
+		}
+		return true;
 	},
 
 	/**
@@ -349,6 +355,13 @@ const internalNginx = {
 	 * @returns {Promise}
 	 */
 	deleteConfig: (host_type, host, delete_err_file) => {
+		// Hosts on a remote node have no local config file; the next full-state
+		// snapshot push (which omits the host) removes it on the agent.
+		if (host?.node_id || host?.node_all) {
+			return import("./node.js").then(({ default: internalNode }) => {
+				internalNode.scheduleHostPush(host);
+			});
+		}
 		const config_file = internalNginx.getConfigName(
 			internalNginx.getFileFriendlyHostType(host_type),
 			typeof host === "undefined" ? 0 : host.id,
@@ -392,12 +405,34 @@ const internalNginx = {
 	 * @param   {Array}   hosts
 	 * @returns {Promise}
 	 */
-	bulkGenerateConfigs: (hostType, hosts) => {
+	bulkGenerateConfigs: async (hostType, hosts) => {
 		const promises = [];
+		const nodeIds = new Set();
+		let pushAll = false;
 		hosts.map((host) => {
-			promises.push(internalNginx.generateConfig(hostType, host));
+			if (host.node_all) {
+				// Replicated host: re-push every enrolled node.
+				pushAll = true;
+			} else if (host.node_id) {
+				// Remote host: re-push the node's snapshot instead of writing locally
+				// (this is how cert renewals and access-list changes reach agents).
+				nodeIds.add(host.node_id);
+			} else {
+				promises.push(internalNginx.generateConfig(hostType, host));
+			}
 			return true;
 		});
+
+		if (pushAll || nodeIds.size) {
+			const { default: internalNode } = await import("./node.js");
+			if (pushAll) {
+				internalNode.schedulePushAll();
+			} else {
+				for (const nodeId of nodeIds) {
+					internalNode.schedulePush(nodeId);
+				}
+			}
+		}
 
 		return Promise.all(promises);
 	},

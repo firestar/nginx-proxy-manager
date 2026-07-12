@@ -7,6 +7,9 @@ import { registerProxyHostTools } from "./tools/proxy-hosts.js";
 import { registerRedirectionHostTools } from "./tools/redirection-hosts.js";
 import { registerStreamTools } from "./tools/streams.js";
 import { registerTagTools } from "./tools/tags.js";
+import { registerNotificationTools } from "./tools/notifications.js";
+import { registerUptimeTools } from "./tools/uptime.js";
+import { registerBackupTools } from "./tools/backups.js";
 
 /**
  * Create a fresh MCP server instance for one Streamable HTTP session. Tools
@@ -37,7 +40,12 @@ const createMcpServer = (ctx) => {
 	registerCertificateTools(server, ctx);
 	registerAccessListTools(server, ctx);
 	registerTagTools(server, ctx);
+	registerTagTools(server, ctx);
 	registerMiscTools(server, ctx);
+	registerMiscTools(server, ctx);
+	registerNotificationTools(server, ctx);
+	registerUptimeTools(server, ctx);
+	registerBackupTools(server, ctx);
 
 	return server;
 };

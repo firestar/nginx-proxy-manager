@@ -253,6 +253,35 @@ services:
     depends_on:
       - authentik
 
+  agent:
+    image: npm2dev:agent
+    container_name: npm2dev.agent
+    build:
+      context: ../
+      dockerfile: ./docker/Dockerfile.agent
+    ports:
+      - 3082:80
+      - 3444:443
+    networks:
+      nginx_proxy_manager:
+        aliases:
+          - agent1.internal
+    environment:
+      TZ: "${TZ:-Australia/Brisbane}"
+      PUID: 1000
+      PGID: 1000
+      FORCE_COLOR: 1
+      # Inside the dev network the panel backend is reachable directly on
+      # port 3000 (no TLS); production agents use wss://panel-host.
+      PANEL_URL: "ws://fullstack:3000"
+      # One-time enrollment token from the panel (POST /api/nodes / Nodes page)
+      AGENT_TOKEN: "${AGENT_TOKEN:-}"
+    volumes:
+      - npm_agent_data:/data
+      - le_agent_data:/etc/letsencrypt
+      - "/etc/localtime:/etc/localtime:ro"
+    depends_on:
+      - fullstack
 volumes:
   npm_data:
     name: npm2dev_core_data
@@ -266,6 +295,10 @@ volumes:
     name: npm2dev_psql_data
   redis_data:
     name: npm2dev_redis_data
+  npm_agent_data:
+    name: npm2dev_agent_data
+  le_agent_data:
+    name: npm2dev_agent_le_data
 
 networks:
   nginx_proxy_manager:

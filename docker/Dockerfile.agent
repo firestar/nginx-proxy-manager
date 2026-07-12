@@ -1,0 +1,66 @@
+# Remote node agent image (npm-agent): openresty/nginx + a slim Node daemon
+# that dials OUT to the panel over WebSocket, receives versioned config
+# snapshots and applies them with staged `nginx -t` validation, atomic symlink
+# swap and rollback.
+#
+# Build from the REPO ROOT:
+#   docker build -f docker/Dockerfile.agent -t npm-agent .
+#
+# Run:
+#   docker run -d --name npm-agent -p 80:80 -p 443:443 \
+#     -v npm-agent-data:/data \
+#     -e PANEL_URL=wss://your-panel-host \
+#     -e AGENT_TOKEN=npma_xxx \
+#     npm-agent
+
+ARG BASE_IMAGE=nginxproxymanager/nginx-full:certbot-node
+FROM $BASE_IMAGE
+
+ARG TARGETPLATFORM
+
+ENV SUPPRESS_NO_CONFIG_WARNING=1 \
+	S6_BEHAVIOUR_IF_STAGE2_FAILS=1 \
+	S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0 \
+	S6_FIX_ATTRS_HIDDEN=1 \
+	S6_KILL_FINISH_MAXTIME=10000 \
+	S6_VERBOSITY=1 \
+	NODE_ENV=production
+
+# s6 overlay
+COPY docker/scripts/install-s6 /tmp/install-s6
+RUN /tmp/install-s6 "${TARGETPLATFORM}" && rm -f /tmp/install-s6
+
+EXPOSE 80 443
+
+# Reuse the panel's nginx config tree (nginx.conf + conf.d includes), then
+# overlay the agent's s6 services and prepare scripts on top.
+COPY docker/rootfs       /
+COPY docker/rootfs-agent /
+COPY agent               /app/agent
+
+# Strip everything panel-only: backend/frontend services, admin UI nginx
+# config, and the prepare steps the agent replaces with 21-agent-paths.sh.
+RUN rm -rf /etc/s6-overlay/s6-rc.d/backend \
+		/etc/s6-overlay/s6-rc.d/frontend \
+		/etc/s6-overlay/s6-rc.d/user/contents.d/backend \
+		/etc/s6-overlay/s6-rc.d/user/contents.d/frontend \
+		/etc/nginx/conf.d/dev.conf \
+		/etc/nginx/conf.d/production.conf.template \
+		/etc/s6-overlay/s6-rc.d/prepare/20-paths.sh \
+		/etc/s6-overlay/s6-rc.d/prepare/30-ownership.sh \
+		/etc/s6-overlay/s6-rc.d/prepare/45-admin-port.sh \
+		/etc/s6-overlay/s6-rc.d/prepare/50-ipv6.sh \
+		/etc/s6-overlay/s6-rc.d/prepare/60-secrets.sh \
+		/etc/s6-overlay/s6-rc.d/prepare/90-banner.sh
+
+WORKDIR /app/agent
+RUN yarn install --production \
+	&& yarn cache clean
+
+VOLUME [ "/data" ]
+ENTRYPOINT [ "/init" ]
+
+LABEL org.label-schema.schema-version="1.0" \
+	org.label-schema.license="MIT" \
+	org.label-schema.name="npm-agent" \
+	org.label-schema.description="Nginx Proxy Manager remote node agent"
