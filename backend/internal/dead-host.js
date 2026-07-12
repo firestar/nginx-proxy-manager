@@ -8,6 +8,7 @@ import internalCertificate from "./certificate.js";
 import internalHost from "./host.js";
 import internalNginx from "./nginx.js";
 import internalTag from "./tag.js";
+import { applyHostVisibility, assertTagWrite, getUserTagIds } from "../lib/host-visibility.js";
 
 const omissions = () => {
 	return ["is_deleted"];
@@ -30,7 +31,11 @@ const internalDeadHost = {
 		const tagIds = data.tag_ids;
 		delete data.tag_ids;
 
-		await access.can("dead_hosts:create", data);
+		const createAccessData = await access.can("dead_hosts:create", data);
+		if (typeof createAccessData === "object" && createAccessData.permission_visibility === "tags") {
+			const userTagIds = await access.loadUserTagIds();
+			assertTagWrite({ visibility: "tags", tagIds: tagIds || [], userTagIds });
+		}
 
 		// Get a list of the domain names and check each of them against existing records
 		const domainNameCheckPromises = [];
@@ -115,7 +120,11 @@ const internalDeadHost = {
 		const tagIds = data.tag_ids;
 		delete data.tag_ids;
 
-		await access.can("dead_hosts:update", data.id);
+		const updateAccessData = await access.can("dead_hosts:update", data.id);
+		if (typeof tagIds !== "undefined" && tagIds !== null && typeof updateAccessData === "object" && updateAccessData.permission_visibility === "tags") {
+			const userTagIds = await access.loadUserTagIds();
+			assertTagWrite({ visibility: "tags", tagIds, userTagIds });
+		}
 
 		// Get a list of the domain names and check each of them against existing records
 		const domainNameCheckPromises = [];
@@ -201,6 +210,9 @@ const internalDeadHost = {
 	 */
 	get: async (access, data) => {
 		const accessData = await access.can("dead_hosts:get", data.id);
+		const userId = access.token.getUserId(1);
+		const visibility = typeof accessData === "object" ? accessData.permission_visibility : "all";
+		const tagIds = visibility === "tags" ? await access.loadUserTagIds() : [];
 		const query = deadHostModel
 			.query()
 			.where("is_deleted", 0)
@@ -208,9 +220,7 @@ const internalDeadHost = {
 			.allowGraph(deadHostModel.defaultAllowGraph)
 			.first();
 
-		if (accessData.permission_visibility !== "all") {
-			query.andWhere("owner_user_id", access.token.getUserId(1));
-		}
+		applyHostVisibility(query, "dead_host", { visibility, userId, tagIds });
 
 		if (typeof data.expand !== "undefined" && data.expand !== null) {
 			query.withGraphFetched(`[${data.expand.join(", ")}]`);
@@ -353,7 +363,10 @@ const internalDeadHost = {
 	 * @returns {Promise}
 	 */
 	getAll: async (access, expand, searchQuery) => {
-		const accessData = await access.can("dead_hosts:list")
+		const accessData = await access.can("dead_hosts:list");
+		const userId = access.token.getUserId(1);
+		const visibility = typeof accessData === "object" ? accessData.permission_visibility : "all";
+		const tagIds = visibility === "tags" ? await access.loadUserTagIds() : [];
 		const query = deadHostModel
 			.query()
 			.where("is_deleted", 0)
@@ -361,9 +374,7 @@ const internalDeadHost = {
 			.allowGraph(deadHostModel.defaultAllowGraph)
 			.orderBy(castJsonIfNeed("domain_names"), "ASC");
 
-		if (accessData.permission_visibility !== "all") {
-			query.andWhere("owner_user_id", access.token.getUserId(1));
-		}
+		applyHostVisibility(query, "dead_host", { visibility, userId, tagIds });
 
 		// Query is used for searching
 		if (typeof searchQuery === "string" && searchQuery.length > 0) {
@@ -392,10 +403,8 @@ const internalDeadHost = {
 	 */
 	getCount: async (user_id, visibility) => {
 		const query = deadHostModel.query().count("id as count").where("is_deleted", 0);
-
-		if (visibility !== "all") {
-			query.andWhere("owner_user_id", user_id);
-		}
+		const tagIds = visibility === "tags" ? await getUserTagIds(user_id) : [];
+		applyHostVisibility(query, "dead_host", { visibility, userId: user_id, tagIds });
 
 		const row = await query.first();
 		return Number.parseInt(row.count, 10);

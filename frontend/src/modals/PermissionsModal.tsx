@@ -5,8 +5,9 @@ import { Field, Form, Formik } from "formik";
 import { type ReactNode, useState } from "react";
 import { Alert } from "react-bootstrap";
 import Modal from "react-bootstrap/Modal";
-import { setPermissions } from "src/api/backend";
+import { setPermissions, setUserTags } from "src/api/backend";
 import { Button, Loading } from "src/components";
+import { TagsField } from "src/components/Form/TagsField";
 import { useUser } from "src/hooks";
 import { T } from "src/locale";
 import styles from "./PermissionsModal.module.css";
@@ -29,7 +30,11 @@ const PermissionsModal = EasyModal.create(({ id, visible, remove }: Props) => {
 		setIsSubmitting(true);
 		setErrorMsg(null);
 		try {
-			await setPermissions(id, values);
+			const { tagIds, ...perms } = values;
+			await setPermissions(id, perms);
+			if (perms.visibility === "tags") {
+				await setUserTags(id, tagIds || []);
+			}
 			remove();
 			queryClient.invalidateQueries({ queryKey: ["users"] });
 			queryClient.invalidateQueries({ queryKey: ["user"] });
@@ -151,11 +156,12 @@ const PermissionsModal = EasyModal.create(({ id, visible, remove }: Props) => {
 							proxyHosts: data.permissions?.proxyHosts,
 							redirectionHosts: data.permissions?.redirectionHosts,
 							streams: data.permissions?.streams,
+							tagIds: data.tagIds || [],
 						} as any
 					}
 					onSubmit={onSubmit}
 				>
-					{() => (
+					{({ values }) => (
 						<Form>
 							<Modal.Header closeButton>
 								<Modal.Title>
@@ -205,10 +211,29 @@ const PermissionsModal = EasyModal.create(({ id, visible, remove }: Props) => {
 												>
 													<T id="permissions.visibility.all" />
 												</label>
+												<input
+													type="radio"
+													className="btn-check"
+													name="btn-radio-basic"
+													id={`${field.name}-tags`}
+													autoComplete="off"
+													value="tags"
+													checked={field.value === "tags"}
+													onChange={() => form.setFieldValue(field.name, "tags")}
+												/>
+												<label
+													htmlFor={`${field.name}-tags`}
+													className={getClasses(field.value === "tags")}
+												>
+													<T id="permissions.visibility.tags" />
+												</label>
 											</div>
 										)}
 									</Field>
 								</div>
+								{!isAdmin && values.visibility === "tags" && (
+									<TagsField name="tagIds" label="tags" id="userTagIds" />
+								)}
 								{!isAdmin && (
 									<>
 										<div className="mb-3">

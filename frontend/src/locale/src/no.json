@@ -772,5 +772,8 @@
 	},
 	"users": {
 		"defaultMessage": "Brukere"
+	},
+	"permissions.visibility.tags": {
+		"defaultMessage": "Restricted by Tags"
 	}
 }

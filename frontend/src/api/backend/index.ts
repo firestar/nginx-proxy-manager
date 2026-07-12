@@ -53,6 +53,7 @@ export * from "./rerollApiKey";
 export * from "./renewCertificate";
 export * from "./responseTypes";
 export * from "./setPermissions";
+export * from "./setUserTags";
 export * from "./testHttpCertificate";
 export * from "./toggleDeadHost";
 export * from "./toggleProxyHost";

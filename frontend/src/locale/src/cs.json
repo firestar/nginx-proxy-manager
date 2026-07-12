@@ -766,5 +766,8 @@
 	},
 	"users": {
 		"defaultMessage": "Uživatelé"
+	},
+	"permissions.visibility.tags": {
+		"defaultMessage": "Restricted by Tags"
 	}
 }

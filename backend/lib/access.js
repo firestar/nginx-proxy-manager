@@ -21,6 +21,7 @@ import userModel from "../models/user.js";
 import permsSchema from "./access/permissions.json" with { type: "json" };
 import roleSchema from "./access/roles.json" with { type: "json" };
 import errs from "./error.js";
+import { getUserTagIds } from "./host-visibility.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -37,6 +38,7 @@ export default function (tokenString) {
 	let permissions = {};
 	let apiKeyTokenData = null;
 	let apiKeyScopes = null;
+	let userTagIdsCache = null;
 
 	/**
 	 * API keys short-circuit JWT verification: look the key up by hash and
@@ -291,6 +293,16 @@ export default function (tokenString) {
 
 		return { roles: _.without(userRoles, "admin"), permissions: capped };
 	};
+	this.loadUserTagIds = async () => {
+		if (userTagIdsCache !== null) {
+			return userTagIdsCache;
+		}
+		if (!Token.hasScope("user") || !tokenData?.attrs?.id) {
+			return [];
+		}
+		userTagIdsCache = await getUserTagIds(tokenData.attrs.id);
+		return userTagIdsCache;
+	};
 	// here:
 
 	return {
@@ -313,6 +325,8 @@ export default function (tokenString) {
 		},
 
 		reloadObjects: this.loadObjects,
+
+		loadUserTagIds: this.loadUserTagIds,
 
 		/**
 		 *

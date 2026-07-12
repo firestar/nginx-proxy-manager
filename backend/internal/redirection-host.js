@@ -8,6 +8,7 @@ import internalCertificate from "./certificate.js";
 import internalHost from "./host.js";
 import internalNginx from "./nginx.js";
 import internalTag from "./tag.js";
+import { applyHostVisibility, assertTagWrite, getUserTagIds } from "../lib/host-visibility.js";
 
 const omissions = () => {
 	return ["is_deleted"];
@@ -33,7 +34,13 @@ const internalRedirectionHost = {
 
 		return access
 			.can("redirection_hosts:create", thisData)
-			.then((/*access_data*/) => {
+			.then(async (access_data) => {
+				if (typeof access_data === "object" && access_data.permission_visibility === "tags") {
+					const userTagIds = await access.loadUserTagIds();
+					assertTagWrite({ visibility: "tags", tagIds: tagIds || [], userTagIds });
+				}
+			})
+			.then(() => {
 				// Get a list of the domain names and check each of them against existing records
 				const domain_name_check_promises = [];
 
@@ -132,7 +139,13 @@ const internalRedirectionHost = {
 
 		return access
 			.can("redirection_hosts:update", thisData.id)
-			.then((/*access_data*/) => {
+			.then(async (access_data) => {
+				if (typeof tagIds !== "undefined" && tagIds !== null && typeof access_data === "object" && access_data.permission_visibility === "tags") {
+					const userTagIds = await access.loadUserTagIds();
+					assertTagWrite({ visibility: "tags", tagIds, userTagIds });
+				}
+			})
+			.then(() => {
 				// Get a list of the domain names and check each of them against existing records
 				const domain_name_check_promises = [];
 
@@ -242,7 +255,10 @@ const internalRedirectionHost = {
 		const thisData = data || {};
 		return access
 			.can("redirection_hosts:get", thisData.id)
-			.then((access_data) => {
+			.then(async (access_data) => {
+				const userId = access.token.getUserId(1);
+				const visibility = typeof access_data === "object" ? access_data.permission_visibility : "all";
+				const tagIds = visibility === "tags" ? await access.loadUserTagIds() : [];
 				const query = redirectionHostModel
 					.query()
 					.where("is_deleted", 0)
@@ -250,9 +266,7 @@ const internalRedirectionHost = {
 					.allowGraph(redirectionHostModel.defaultAllowGraph)
 					.first();
 
-				if (access_data.permission_visibility !== "all") {
-					query.andWhere("owner_user_id", access.token.getUserId(1));
-				}
+				applyHostVisibility(query, "redirection_host", { visibility, userId, tagIds });
 
 				if (typeof thisData.expand !== "undefined" && thisData.expand !== null) {
 					query.withGraphFetched(`[${thisData.expand.join(", ")}]`);
@@ -431,7 +445,10 @@ const internalRedirectionHost = {
 	getAll: (access, expand, search_query) => {
 		return access
 			.can("redirection_hosts:list")
-			.then((access_data) => {
+			.then(async (access_data) => {
+				const userId = access.token.getUserId(1);
+				const visibility = typeof access_data === "object" ? access_data.permission_visibility : "all";
+				const tagIds = visibility === "tags" ? await access.loadUserTagIds() : [];
 				const query = redirectionHostModel
 					.query()
 					.where("is_deleted", 0)
@@ -439,9 +456,7 @@ const internalRedirectionHost = {
 					.allowGraph(redirectionHostModel.defaultAllowGraph)
 					.orderBy(castJsonIfNeed("domain_names"), "ASC");
 
-				if (access_data.permission_visibility !== "all") {
-					query.andWhere("owner_user_id", access.token.getUserId(1));
-				}
+				applyHostVisibility(query, "redirection_host", { visibility, userId, tagIds });
 
 				// Query is used for searching
 				if (typeof search_query === "string" && search_query.length > 0) {
@@ -472,12 +487,10 @@ const internalRedirectionHost = {
 	 * @param   {String}  visibility
 	 * @returns {Promise}
 	 */
-	getCount: (user_id, visibility) => {
+	getCount: async (user_id, visibility) => {
 		const query = redirectionHostModel.query().count("id as count").where("is_deleted", 0);
-
-		if (visibility !== "all") {
-			query.andWhere("owner_user_id", user_id);
-		}
+		const tagIds = visibility === "tags" ? await getUserTagIds(user_id) : [];
+		applyHostVisibility(query, "redirection_host", { visibility, userId: user_id, tagIds });
 
 		return query.first().then((row) => {
 			return Number.parseInt(row.count, 10);

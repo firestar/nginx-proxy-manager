@@ -184,6 +184,7 @@ router
 					data.user_id,
 				),
 			});
+			user.tag_ids = await internalUser.getTags(user.id);
 			res.status(200).send(user);
 		} catch (err) {
 			debug(logger, `${req.method.toUpperCase()} ${req.path}: ${err}`);
@@ -287,6 +288,43 @@ router
 			);
 			payload.id = req.params.user_id;
 			const result = await internalUser.setPermissions(
+				res.locals.access,
+				payload,
+			);
+			res.status(200).send(result);
+		} catch (err) {
+			debug(logger, `${req.method.toUpperCase()} ${req.path}: ${err}`);
+			next(err);
+		}
+	});
+
+
+/**
+ * Specific user tag assignments
+ *
+ * /api/users/123/tags
+ */
+router
+	.route("/:user_id/tags")
+	.options((_, res) => {
+		res.sendStatus(204);
+	})
+	.all(jwtdecode())
+	.all(userIdFromMe)
+
+	/**
+	 * PUT /api/users/123/tags
+	 *
+	 * Assign tags to a user (admin only)
+	 */
+	.put(async (req, res, next) => {
+		try {
+			const payload = await apiValidator(
+				getValidationSchema("/users/{userID}/tags", "put"),
+				req.body,
+			);
+			payload.id = req.params.user_id;
+			const result = await internalUser.setTags(
 				res.locals.access,
 				payload,
 			);

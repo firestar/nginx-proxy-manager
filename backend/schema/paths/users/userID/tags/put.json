@@ -1,0 +1,65 @@
+{
+	"operationId": "setUserTags",
+	"summary": "Set a User's Tag Assignments",
+	"tags": ["users"],
+	"security": [
+		{
+			"bearerAuth": ["admin"]
+		}
+	],
+	"parameters": [
+		{
+			"in": "path",
+			"name": "userID",
+			"schema": {
+				"type": "integer",
+				"minimum": 1
+			},
+			"required": true,
+			"description": "User ID",
+			"example": 2
+		}
+	],
+	"requestBody": {
+		"description": "Tag IDs to assign",
+		"required": true,
+		"content": {
+			"application/json": {
+				"schema": {
+					"type": "object",
+					"required": ["tag_ids"],
+					"properties": {
+						"tag_ids": {
+							"type": "array",
+							"items": {
+								"type": "integer",
+								"minimum": 1
+							},
+							"description": "Tag IDs to assign to this user"
+						}
+					}
+				},
+				"example": {
+					"tag_ids": [1, 2]
+				}
+			}
+		}
+	},
+	"responses": {
+		"200": {
+			"description": "200 response",
+			"content": {
+				"application/json": {
+					"examples": {
+						"default": {
+							"value": true
+						}
+					},
+					"schema": {
+						"type": "boolean"
+					}
+				}
+			}
+		}
+	}
+}

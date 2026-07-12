@@ -679,5 +679,8 @@
 	},
 	"users": {
 		"defaultMessage": "Kullanıcılar"
+	},
+	"permissions.visibility.tags": {
+		"defaultMessage": "Restricted by Tags"
 	}
 }

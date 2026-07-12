@@ -412,6 +412,11 @@
 			"post": {
 				"$ref": "./paths/users/userID/login/post.json"
 			}
+		},
+		"/users/{userID}/tags": {
+			"put": {
+				"$ref": "./paths/users/userID/tags/put.json"
+			}
 		}
 	}
 }

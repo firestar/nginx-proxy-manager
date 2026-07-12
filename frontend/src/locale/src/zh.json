@@ -658,5 +658,8 @@
 	},
 	"users": {
 		"defaultMessage": "用户列表"
+	},
+	"permissions.visibility.tags": {
+		"defaultMessage": "Restricted by Tags"
 	}
 }

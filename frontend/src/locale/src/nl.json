@@ -772,5 +772,8 @@
 	},
 	"users": {
 		"defaultMessage": "Gebruikers"
+	},
+	"permissions.visibility.tags": {
+		"defaultMessage": "Restricted by Tags"
 	}
 }

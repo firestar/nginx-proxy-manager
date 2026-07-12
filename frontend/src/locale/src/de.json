@@ -652,5 +652,8 @@
 	},
 	"users": {
 		"defaultMessage": "Benutzer"
+	},
+	"permissions.visibility.tags": {
+		"defaultMessage": "Restricted by Tags"
 	}
 }

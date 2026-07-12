@@ -5,7 +5,7 @@
 		"visibility": {
 			"type": "string",
 			"description": "Visibility Type",
-			"enum": ["all", "user"],
+			"enum": ["all", "user", "tags"],
 			"example": "all"
 		},
 		"access_lists": {

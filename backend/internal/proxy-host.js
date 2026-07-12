@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import _ from "lodash";
 import errs from "../lib/error.js";
 import nginxLint from "./nginx-lint.js";
@@ -9,6 +10,7 @@ import internalCertificate from "./certificate.js";
 import internalHost from "./host.js";
 import internalNginx from "./nginx.js";
 import internalTag from "./tag.js";
+import { applyHostVisibility, assertTagWrite, getUserTagIds } from "../lib/host-visibility.js";
 
 const omissions = () => {
 	return ["is_deleted", "owner.is_deleted"];
@@ -34,6 +36,12 @@ const internalProxyHost = {
 
 		return access
 			.can("proxy_hosts:create", thisData)
+			.then(async (access_data) => {
+				if (typeof access_data === "object" && access_data.permission_visibility === "tags") {
+					const userTagIds = await access.loadUserTagIds();
+					assertTagWrite({ visibility: "tags", tagIds: tagIds || [], userTagIds });
+				}
+			})
 			.then(() => {
 				// Get a list of the domain names and check each of them against existing records
 				const domain_name_check_promises = [];
@@ -137,7 +145,13 @@ const internalProxyHost = {
 
 		return access
 			.can("proxy_hosts:update", thisData.id)
-			.then((/*access_data*/) => {
+			.then(async (access_data) => {
+				if (typeof tagIds !== "undefined" && tagIds !== null && typeof access_data === "object" && access_data.permission_visibility === "tags") {
+					const userTagIds = await access.loadUserTagIds();
+					assertTagWrite({ visibility: "tags", tagIds, userTagIds });
+				}
+			})
+			.then(() => {
 				// Get a list of the domain names and check each of them against existing records
 				const domain_name_check_promises = [];
 
@@ -254,7 +268,10 @@ const internalProxyHost = {
 		const thisData = data || {};
 		return access
 			.can("proxy_hosts:get", thisData.id)
-			.then((access_data) => {
+			.then(async (access_data) => {
+				const userId = access.token.getUserId(1);
+				const visibility = typeof access_data === "object" ? access_data.permission_visibility : "all";
+				const tagIds = visibility === "tags" ? await access.loadUserTagIds() : [];
 				const query = proxyHostModel
 					.query()
 					.where("is_deleted", 0)
@@ -262,9 +279,7 @@ const internalProxyHost = {
 					.allowGraph(proxyHostModel.defaultAllowGraph)
 					.first();
 
-				if (access_data.permission_visibility !== "all") {
-					query.andWhere("owner_user_id", access.token.getUserId(1));
-				}
+				applyHostVisibility(query, "proxy_host", { visibility, userId, tagIds });
 
 				if (typeof thisData.expand !== "undefined" && thisData.expand !== null) {
 					query.withGraphFetched(`[${thisData.expand.join(", ")}]`);
@@ -441,6 +456,9 @@ const internalProxyHost = {
 	 */
 	getAll: async (access, expand, searchQuery) => {
 		const accessData = await access.can("proxy_hosts:list");
+		const userId = access.token.getUserId(1);
+		const visibility = typeof accessData === "object" ? accessData.permission_visibility : "all";
+		const tagIds = visibility === "tags" ? await access.loadUserTagIds() : [];
 
 		const query = proxyHostModel
 			.query()
@@ -449,9 +467,7 @@ const internalProxyHost = {
 			.allowGraph(proxyHostModel.defaultAllowGraph)
 			.orderBy(castJsonIfNeed("domain_names"), "ASC");
 
-		if (accessData.permission_visibility !== "all") {
-			query.andWhere("owner_user_id", access.token.getUserId(1));
-		}
+		applyHostVisibility(query, "proxy_host", { visibility, userId, tagIds });
 
 		// Query is used for searching
 		if (typeof searchQuery === "string" && searchQuery.length > 0) {
@@ -478,12 +494,10 @@ const internalProxyHost = {
 	 * @param   {String}  visibility
 	 * @returns {Promise}
 	 */
-	getCount: (user_id, visibility) => {
+	getCount: async (user_id, visibility) => {
 		const query = proxyHostModel.query().count("id as count").where("is_deleted", 0);
-
-		if (visibility !== "all") {
-			query.andWhere("owner_user_id", user_id);
-		}
+		const tagIds = visibility === "tags" ? await getUserTagIds(user_id) : [];
+		applyHostVisibility(query, "proxy_host", { visibility, userId: user_id, tagIds });
 
 		return query.first().then((row) => {
 			return Number.parseInt(row.count, 10);

@@ -15,6 +15,7 @@ export const HIDDEN = "hidden";
 
 export const ALL = "all";
 export const USER = "user";
+export const TAGS = "tags";
 
 export type Section =
 	| typeof ADMIN

@@ -655,5 +655,8 @@
 	},
 	"users": {
 		"defaultMessage": "Danh sách người dùng"
+	},
+	"permissions.visibility.tags": {
+		"defaultMessage": "Restricted by Tags"
 	}
 }

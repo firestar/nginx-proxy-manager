@@ -5,6 +5,7 @@ import utils from "../lib/utils.js";
 import authModel from "../models/auth.js";
 import userModel from "../models/user.js";
 import userPermissionModel from "../models/user_permission.js";
+import userTagModel from "../models/user_tag.js";
 import internalAuditLog from "./audit-log.js";
 import internalToken from "./token.js";
 
@@ -494,6 +495,40 @@ const internalUser = {
 			.then((user) => {
 				return internalToken.getTokenFromUser(user);
 			});
+	},
+
+	setTags: async (access, data) => {
+		await access.can("users:permissions", data.id);
+
+		const user = await internalUser.get(access, { id: data.id });
+		if (user.id !== data.id) {
+			throw new errs.InternalValidationError(
+				`User tags could not be updated, IDs do not match: ${user.id} !== ${data.id}`,
+			);
+		}
+
+		const unique = [...new Set((data.tag_ids || []).filter((n) => Number.isInteger(n) && n > 0))];
+		await userTagModel.query().delete().where("user_id", data.id);
+		if (unique.length) {
+			await userTagModel.query().insert(unique.map((tagId) => ({ user_id: data.id, tag_id: tagId })));
+		}
+
+		await internalAuditLog.add(access, {
+			action: "updated",
+			object_type: "user",
+			object_id: data.id,
+			meta: {
+				name: user.name,
+				tag_ids: unique,
+			},
+		});
+
+		return true;
+	},
+
+	getTags: async (userId) => {
+		const rows = await userTagModel.query().select("tag_id").where("user_id", userId);
+		return rows.map((r) => r.tag_id);
 	},
 };
 

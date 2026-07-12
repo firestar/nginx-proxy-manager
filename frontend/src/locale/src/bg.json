@@ -691,5 +691,8 @@
 	},
 	"users": {
 		"defaultMessage": "Потребители"
+	},
+	"permissions.visibility.tags": {
+		"defaultMessage": "Restricted by Tags"
 	}
 }

@@ -679,5 +679,8 @@
 	},
 	"users": {
 		"defaultMessage": "Pengguna"
+	},
+	"permissions.visibility.tags": {
+		"defaultMessage": "Restricted by Tags"
 	}
 }

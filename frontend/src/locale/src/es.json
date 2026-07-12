@@ -688,5 +688,8 @@
 	},
 	"users": {
 		"defaultMessage": "Usuarios"
+	},
+	"permissions.visibility.tags": {
+		"defaultMessage": "Restricted by Tags"
 	}
 }

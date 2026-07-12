@@ -679,5 +679,8 @@
 	},
 	"users": {
 		"defaultMessage": "Úsáideoirí"
+	},
+	"permissions.visibility.tags": {
+		"defaultMessage": "Restricted by Tags"
 	}
 }
