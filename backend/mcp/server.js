@@ -46,6 +46,8 @@ const createMcpServer = (ctx) => {
 	registerUptimeTools(server, ctx);
 	registerBackupTools(server, ctx);
 	registerNodeTools(server, ctx);
+
+	return server;
 };
 
 export { createMcpServer };
