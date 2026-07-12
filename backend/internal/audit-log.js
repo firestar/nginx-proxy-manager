@@ -10,30 +10,63 @@ const internalAuditLog = {
 	 * @param   {Access}  access
 	 * @param   {Array}   [expand]
 	 * @param   {String}  [searchQuery]
+	 * @param   {Object}  [filters]
+	 * @param   {Number}  [filters.limit]
+	 * @param   {Number}  [filters.offset]
+	 * @param   {String}  [filters.object_type]
+	 * @param   {String}  [filters.action]
+	 * @param   {Number}  [filters.user_id]
+	 * @param   {String}  [filters.since]
+	 * @param   {String}  [filters.until]
+	 * @param   {Boolean} [filters.paginated]  true when limit/offset were explicitly supplied
 	 * @returns {Promise}
 	 */
-	getAll: async (access, expand, searchQuery) => {
+	getAll: async (access, expand, searchQuery, filters = {}) => {
 		await access.can("auditlog:list");
+
+		const { paginated, limit = 100, offset = 0, object_type, action, user_id, since, until } = filters;
 
 		const query = auditLogModel
 			.query()
 			.orderBy("created_on", "DESC")
 			.orderBy("id", "DESC")
-			.limit(100)
 			.allowGraph("[user]");
 
-		// Query is used for searching
+		// Free-text search
 		if (typeof searchQuery === "string" && searchQuery.length > 0) {
 			query.where(function () {
 				this.where(castJsonIfNeed("meta"), "like", `%${searchQuery}`);
 			});
 		}
 
+		// Column filters
+		if (object_type) {
+			query.where("object_type", object_type);
+		}
+		if (action) {
+			query.where("action", action);
+		}
+		if (user_id) {
+			query.where("user_id", user_id);
+		}
+		if (since) {
+			query.where("created_on", ">=", since);
+		}
+		if (until) {
+			query.where("created_on", "<=", until);
+		}
+
 		if (typeof expand !== "undefined" && expand !== null) {
 			query.withGraphFetched(`[${expand.join(", ")}]`);
 		}
 
-		return await query;
+		if (paginated) {
+			const total = await query.clone().resultSize();
+			const rows = await query.limit(limit).offset(offset);
+			return { total, rows };
+		}
+
+		return await query.limit(100);
 	},
 
 	/**

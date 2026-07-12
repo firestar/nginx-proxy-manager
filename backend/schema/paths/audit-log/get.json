@@ -7,13 +7,96 @@
 			"bearerAuth": ["admin"]
 		}
 	],
+	"parameters": [
+		{
+			"in": "query",
+			"name": "expand",
+			"schema": {
+				"type": "string"
+			},
+			"description": "Comma-separated list of relations to expand (e.g. user)"
+		},
+		{
+			"in": "query",
+			"name": "query",
+			"schema": {
+				"type": "string",
+				"maxLength": 255
+			},
+			"description": "Free-text search in meta field"
+		},
+		{
+			"in": "query",
+			"name": "limit",
+			"schema": {
+				"type": "integer",
+				"minimum": 1,
+				"maximum": 500
+			},
+			"description": "Page size (supplying this switches to envelope response)"
+		},
+		{
+			"in": "query",
+			"name": "offset",
+			"schema": {
+				"type": "integer",
+				"minimum": 0
+			},
+			"description": "Row offset (supplying this switches to envelope response)"
+		},
+		{
+			"in": "query",
+			"name": "object_type",
+			"schema": {
+				"type": "string",
+				"maxLength": 50
+			},
+			"description": "Filter by object type"
+		},
+		{
+			"in": "query",
+			"name": "action",
+			"schema": {
+				"type": "string",
+				"maxLength": 50
+			},
+			"description": "Filter by action"
+		},
+		{
+			"in": "query",
+			"name": "user_id",
+			"schema": {
+				"type": "integer",
+				"minimum": 1
+			},
+			"description": "Filter by user ID"
+		},
+		{
+			"in": "query",
+			"name": "since",
+			"schema": {
+				"type": "string",
+				"format": "date-time"
+			},
+			"description": "Filter entries on or after this datetime"
+		},
+		{
+			"in": "query",
+			"name": "until",
+			"schema": {
+				"type": "string",
+				"format": "date-time"
+			},
+			"description": "Filter entries on or before this datetime"
+		}
+	],
 	"responses": {
 		"200": {
-			"description": "200 response",
+			"description": "200 response — bare array (no pagination params) or envelope (limit/offset supplied)",
 			"content": {
 				"application/json": {
 					"examples": {
-						"default": {
+						"list": {
 							"value": [
 								{
 									"id": 7,
@@ -24,27 +107,38 @@
 									"object_id": 3,
 									"action": "updated",
 									"meta": {
-										"name": "John Doe",
-										"permissions": {
-											"user_id": 3,
-											"visibility": "all",
-											"access_lists": "manage",
-											"dead_hosts": "hidden",
-											"proxy_hosts": "manage",
-											"redirection_hosts": "view",
-											"streams": "hidden",
-											"certificates": "manage",
-											"id": 3,
-											"modified_on": "2024-10-08T13:09:54.000Z",
-											"created_on": "2024-10-08T13:09:51.000Z"
-										}
+										"name": "John Doe"
 									}
 								}
 							]
+						},
+						"paged": {
+							"value": {
+								"total": 42,
+								"rows": [
+									{
+										"id": 7,
+										"created_on": "2024-10-08T13:09:54.000Z",
+										"modified_on": "2024-10-08T13:09:54.000Z",
+										"user_id": 1,
+										"object_type": "user",
+										"object_id": 3,
+										"action": "updated",
+										"meta": {}
+									}
+								]
+							}
 						}
 					},
 					"schema": {
-						"$ref": "../../components/audit-log-list.json"
+						"oneOf": [
+							{
+								"$ref": "../../components/audit-log-list.json"
+							},
+							{
+								"$ref": "../../components/audit-log-envelope.json"
+							}
+						]
 					}
 				}
 			}

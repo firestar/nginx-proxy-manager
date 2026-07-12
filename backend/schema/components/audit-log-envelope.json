@@ -1,0 +1,18 @@
+{
+	"type": "object",
+	"description": "Paginated Audit Log response",
+	"required": ["total", "rows"],
+	"properties": {
+		"total": {
+			"type": "integer",
+			"description": "Total number of matching records",
+			"example": 123
+		},
+		"rows": {
+			"type": "array",
+			"items": {
+				"$ref": "./audit-log-object.json"
+			}
+		}
+	}
+}

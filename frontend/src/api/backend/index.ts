@@ -24,6 +24,7 @@ export * from "./getAccessList";
 export * from "./getAccessLists";
 export * from "./getAuditLog";
 export * from "./getAuditLogs";
+export * from "./getAuditLogsPaged";
 export * from "./getCertificate";
 export * from "./getCertificateDNSProviders";
 export * from "./getCertificates";
