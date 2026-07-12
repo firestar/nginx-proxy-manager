@@ -1,0 +1,57 @@
+{
+	"operationId": "getBackupSchedule",
+	"summary": "Get Backup Schedule",
+	"tags": ["backup"],
+	"security": [
+		{
+			"bearerAuth": []
+		}
+	],
+	"responses": {
+		"200": {
+			"description": "Current backup schedule configuration",
+			"content": {
+				"application/json": {
+					"schema": {
+						"type": "object",
+						"properties": {
+							"enabled": { "type": "boolean", "description": "Whether scheduled backups are enabled" },
+							"cron": { "type": "string", "description": "Cron expression for backup schedule", "example": "0 3 * * *" },
+							"retention_count": { "type": "integer", "description": "Number of backups to retain on S3", "example": 7 },
+							"encrypt": { "type": "boolean", "description": "Whether backups are encrypted" },
+							"has_passphrase": { "type": "boolean", "description": "Whether an encryption passphrase is set (passphrase is write-only)" },
+							"s3": {
+								"type": "object",
+								"properties": {
+									"endpoint": { "type": "string", "example": "https://s3.amazonaws.com" },
+									"region": { "type": "string", "example": "us-east-1" },
+									"bucket": { "type": "string", "example": "my-npm-backups" },
+									"access_key": { "type": "string", "example": "AKIAIOSFODNN7EXAMPLE" },
+									"has_secret_key": { "type": "boolean", "description": "Whether a secret key is set (secret_key is write-only)" },
+									"prefix": { "type": "string", "example": "npm-backups" },
+									"force_path_style": { "type": "boolean", "example": true }
+								}
+							}
+						}
+					},
+					"example": {
+						"enabled": false,
+						"cron": "0 3 * * *",
+						"retention_count": 7,
+						"encrypt": false,
+						"has_passphrase": false,
+						"s3": {
+							"endpoint": "",
+							"region": "us-east-1",
+							"bucket": "",
+							"access_key": "",
+							"has_secret_key": false,
+							"prefix": "npm-backups",
+							"force_path_style": true
+						}
+					}
+				}
+			}
+		}
+	}
+}

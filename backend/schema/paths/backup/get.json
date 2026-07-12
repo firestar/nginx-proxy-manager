@@ -1,0 +1,34 @@
+{
+	"operationId": "downloadBackup",
+	"summary": "Download Backup Archive",
+	"tags": ["backup"],
+	"security": [
+		{
+			"bearerAuth": []
+		}
+	],
+	"parameters": [
+		{
+			"in": "query",
+			"name": "passphrase",
+			"description": "If provided, the archive is AES-256-GCM encrypted with this passphrase",
+			"schema": {
+				"type": "string"
+			},
+			"required": false
+		}
+	],
+	"responses": {
+		"200": {
+			"description": "Backup archive (tar.gz)",
+			"content": {
+				"application/gzip": {
+					"schema": {
+						"type": "string",
+						"format": "binary"
+					}
+				}
+			}
+		}
+	}
+}

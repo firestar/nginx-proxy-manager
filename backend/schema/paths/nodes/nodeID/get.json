@@ -1,0 +1,41 @@
+{
+	"operationId": "getNode",
+	"summary": "Get Node",
+	"tags": ["nodes"],
+	"security": [
+		{
+			"bearerAuth": []
+		}
+	],
+	"parameters": [
+		{
+			"in": "path",
+			"name": "nodeID",
+			"description": "Node ID",
+			"schema": { "type": "integer", "minimum": 1 },
+			"required": true,
+			"example": 1
+		}
+	],
+	"responses": {
+		"200": {
+			"description": "Node",
+			"content": {
+				"application/json": {
+					"schema": {
+						"type": "object",
+						"properties": {
+							"id": { "type": "integer" },
+							"created_on": { "type": "string", "format": "date-time" },
+							"modified_on": { "type": "string", "format": "date-time" },
+							"name": { "type": "string" },
+							"status": { "type": "string", "enum": ["pending", "online", "offline"] },
+							"connected": { "type": "boolean" },
+							"meta": { "type": "object" }
+						}
+					}
+				}
+			}
+		}
+	}
+}

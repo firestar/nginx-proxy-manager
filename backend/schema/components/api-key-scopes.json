@@ -20,7 +20,11 @@
 			"notifications:view",
 			"notifications:manage",
 			"backup:view",
-			"backup:manage"
+			"backup:manage",
+			"nodes:view",
+			"nodes:manage",
+			"uptime:view",
+			"uptime:manage"
 		]
 	},
 	"example": ["proxy_hosts:manage", "certificates:view"]

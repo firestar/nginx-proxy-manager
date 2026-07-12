@@ -1,0 +1,66 @@
+{
+	"operationId": "getStatusPage",
+	"summary": "Get Public Status Page",
+	"tags": ["public"],
+	"parameters": [
+		{
+			"in": "path",
+			"name": "slug",
+			"description": "Status page slug",
+			"schema": { "type": "string" },
+			"required": true,
+			"example": "my-services"
+		}
+	],
+	"responses": {
+		"200": {
+			"description": "Status page data",
+			"content": {
+				"application/json": {
+					"schema": {
+						"type": "object",
+						"properties": {
+							"title": { "type": "string", "example": "Service Status" },
+							"generated_on": { "type": "string", "format": "date-time" },
+							"hosts": {
+								"type": "array",
+								"items": {
+									"type": "object",
+									"properties": {
+										"name": { "type": "string" },
+										"status": { "type": "string", "enum": ["up", "down", "unknown"] },
+										"uptime": {
+											"type": "object",
+											"properties": {
+												"d1": { "type": "number", "description": "Uptime % over last 24 hours" },
+												"d7": { "type": "number", "description": "Uptime % over last 7 days" },
+												"d90": { "type": "number", "description": "Uptime % over last 90 days" }
+											}
+										}
+									}
+								}
+							}
+						}
+					},
+					"example": {
+						"title": "Service Status",
+						"generated_on": "2026-07-12T10:00:00.000Z",
+						"hosts": [
+							{
+								"name": "example.com",
+								"status": "up",
+								"uptime": { "d1": 100.0, "d7": 99.8, "d90": 99.5 }
+							}
+						]
+					}
+				}
+			}
+		},
+		"404": {
+			"description": "Status page not found or disabled"
+		},
+		"429": {
+			"description": "Too many requests"
+		}
+	}
+}

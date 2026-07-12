@@ -1,0 +1,61 @@
+{
+	"operationId": "updateNotificationChannel",
+	"summary": "Update Notification Channel",
+	"tags": ["notifications"],
+	"security": [
+		{
+			"bearerAuth": []
+		}
+	],
+	"parameters": [
+		{
+			"in": "path",
+			"name": "id",
+			"description": "Notification channel ID",
+			"schema": { "type": "integer", "minimum": 1 },
+			"required": true,
+			"example": 1
+		}
+	],
+	"requestBody": {
+		"description": "Fields to update",
+		"required": true,
+		"content": {
+			"application/json": {
+				"schema": {
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"name": { "type": "string", "minLength": 1 },
+						"type": { "type": "string", "enum": ["webhook", "slack", "discord", "telegram", "email"] },
+						"config": { "type": "object" },
+						"events": { "type": "array", "items": { "type": "string" } },
+						"enabled": { "type": "boolean" }
+					}
+				}
+			}
+		}
+	},
+	"responses": {
+		"200": {
+			"description": "Updated notification channel",
+			"content": {
+				"application/json": {
+					"schema": {
+						"type": "object",
+						"properties": {
+							"id": { "type": "integer" },
+							"created_on": { "type": "string", "format": "date-time" },
+							"modified_on": { "type": "string", "format": "date-time" },
+							"name": { "type": "string" },
+							"type": { "type": "string" },
+							"config": { "type": "object" },
+							"events": { "type": "array", "items": { "type": "string" } },
+							"enabled": { "type": "boolean" }
+						}
+					}
+				}
+			}
+		}
+	}
+}

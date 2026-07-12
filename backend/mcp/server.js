@@ -10,6 +10,7 @@ import { registerTagTools } from "./tools/tags.js";
 import { registerNotificationTools } from "./tools/notifications.js";
 import { registerUptimeTools } from "./tools/uptime.js";
 import { registerBackupTools } from "./tools/backups.js";
+import { registerNodeTools } from "./tools/nodes.js";
 
 /**
  * Create a fresh MCP server instance for one Streamable HTTP session. Tools
@@ -40,14 +41,11 @@ const createMcpServer = (ctx) => {
 	registerCertificateTools(server, ctx);
 	registerAccessListTools(server, ctx);
 	registerTagTools(server, ctx);
-	registerTagTools(server, ctx);
-	registerMiscTools(server, ctx);
 	registerMiscTools(server, ctx);
 	registerNotificationTools(server, ctx);
 	registerUptimeTools(server, ctx);
 	registerBackupTools(server, ctx);
-
-	return server;
+	registerNodeTools(server, ctx);
 };
 
 export { createMcpServer };

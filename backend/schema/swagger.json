@@ -71,6 +71,18 @@
 		{
 			"name": "tags",
 			"description": "Endpoints related to Tags"
+		},
+		{
+			"name": "backup",
+			"description": "Endpoints for managing backups"
+		},
+		{
+			"name": "notifications",
+			"description": "Endpoints for managing notification channels"
+		},
+		{
+			"name": "nodes",
+			"description": "Endpoints for managing distributed nodes"
 		}
 	],
 	"paths": {
@@ -416,6 +428,102 @@
 		"/users/{userID}/tags": {
 			"put": {
 				"$ref": "./paths/users/userID/tags/put.json"
+			}
+		},
+		"/backup": {
+			"get": {
+				"$ref": "./paths/backup/get.json"
+			}
+		},
+		"/backup/import": {
+			"post": {
+				"$ref": "./paths/backup/import/post.json"
+			}
+		},
+		"/backup/schedule": {
+			"get": {
+				"$ref": "./paths/backup/schedule/get.json"
+			},
+			"put": {
+				"$ref": "./paths/backup/schedule/put.json"
+			}
+		},
+		"/backup/run": {
+			"post": {
+				"$ref": "./paths/backup/run/post.json"
+			}
+		},
+		"/backup/history": {
+			"get": {
+				"$ref": "./paths/backup/history/get.json"
+			}
+		},
+		"/notifications/channels": {
+			"get": {
+				"$ref": "./paths/notifications/channels/get.json"
+			},
+			"post": {
+				"$ref": "./paths/notifications/channels/post.json"
+			}
+		},
+		"/notifications/channels/{id}": {
+			"get": {
+				"$ref": "./paths/notifications/channels/id/get.json"
+			},
+			"put": {
+				"$ref": "./paths/notifications/channels/id/put.json"
+			},
+			"delete": {
+				"$ref": "./paths/notifications/channels/id/delete.json"
+			}
+		},
+		"/notifications/channels/{id}/test": {
+			"post": {
+				"$ref": "./paths/notifications/channels/id/test/post.json"
+			}
+		},
+		"/notifications/logs": {
+			"get": {
+				"$ref": "./paths/notifications/logs/get.json"
+			}
+		},
+		"/nodes": {
+			"get": {
+				"$ref": "./paths/nodes/get.json"
+			},
+			"post": {
+				"$ref": "./paths/nodes/post.json"
+			}
+		},
+		"/nodes/{nodeID}": {
+			"get": {
+				"$ref": "./paths/nodes/nodeID/get.json"
+			},
+			"put": {
+				"$ref": "./paths/nodes/nodeID/put.json"
+			},
+			"delete": {
+				"$ref": "./paths/nodes/nodeID/delete.json"
+			}
+		},
+		"/nodes/{nodeID}/token": {
+			"post": {
+				"$ref": "./paths/nodes/nodeID/token/post.json"
+			}
+		},
+		"/status/{slug}": {
+			"get": {
+				"$ref": "./paths/status/slug/get.json"
+			}
+		},
+		"/reports/uptime": {
+			"get": {
+				"$ref": "./paths/reports/uptime/get.json"
+			}
+		},
+		"/reports/nodes/metrics": {
+			"get": {
+				"$ref": "./paths/reports/nodes/metrics/get.json"
 			}
 		}
 	}

@@ -14,14 +14,17 @@ import Ajv from "ajv/dist/2020.js";
 import _ from "lodash";
 import { access as logger } from "../logger.js";
 import apiKeyModel from "../models/api_key.js";
+import deadHostModel from "../models/dead_host.js";
 import now from "../models/now_helper.js";
 import proxyHostModel from "../models/proxy_host.js";
+import redirectionHostModel from "../models/redirection_host.js";
+import streamModel from "../models/stream.js";
 import TokenModel from "../models/token.js";
 import userModel from "../models/user.js";
 import permsSchema from "./access/permissions.json" with { type: "json" };
 import roleSchema from "./access/roles.json" with { type: "json" };
 import errs from "./error.js";
-import { getUserTagIds } from "./host-visibility.js";
+import { applyHostVisibility, getUserTagIds } from "./host-visibility.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -169,35 +172,37 @@ export default function (tokenString) {
 			if (typeof objectCache[objectType] !== "undefined") {
 				objects = objectCache[objectType];
 			} else {
+				const loadHostIds = async (model, singularType) => {
+					const tagIds = permissions.visibility === "tags" ? await this.loadUserTagIds() : [];
+					const query = model.query().select("id").andWhere("is_deleted", 0);
+					applyHostVisibility(query, singularType, { visibility: permissions.visibility, userId: tokenUserId, tagIds });
+					const rows = await query;
+					const ids = rows.map((r) => r.id);
+					if (!ids.length) ids.push(0);
+					return ids;
+				};
 				switch (objectType) {
 					// USERS - should only return yourself
 					case "users":
 						objects = tokenUserId ? [tokenUserId] : [];
 						break;
 
-					// Proxy Hosts
-					case "proxy_hosts": {
-						const query = proxyHostModel
-							.query()
-							.select("id")
-							.andWhere("is_deleted", 0);
-
-						if (permissions.visibility === "user") {
-							query.andWhere("owner_user_id", tokenUserId);
-						}
-
-						const rows = await query;
-						objects = [];
-						_.forEach(rows, (ruleRow) => {
-							objects.push(ruleRow.id);
-						});
-
-						// enum should not have less than 1 item
-						if (!objects.length) {
-							objects.push(0);
-						}
+					// Host types — filtered by visibility (all / user / tags)
+					case "proxy_hosts":
+						objects = await loadHostIds(proxyHostModel, "proxy_host");
 						break;
-					}
+
+					case "redirection_hosts":
+						objects = await loadHostIds(redirectionHostModel, "redirection_host");
+						break;
+
+					case "dead_hosts":
+						objects = await loadHostIds(deadHostModel, "dead_host");
+						break;
+
+					case "streams":
+						objects = await loadHostIds(streamModel, "stream");
+						break;
 				}
 				objectCache[objectType] = objects;
 			}

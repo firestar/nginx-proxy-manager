@@ -1,0 +1,52 @@
+{
+	"operationId": "createNotificationChannel",
+	"summary": "Create Notification Channel",
+	"tags": ["notifications"],
+	"security": [
+		{
+			"bearerAuth": []
+		}
+	],
+	"requestBody": {
+		"description": "Notification channel payload",
+		"required": true,
+		"content": {
+			"application/json": {
+				"schema": {
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["name", "type"],
+					"properties": {
+						"name": { "type": "string", "minLength": 1, "example": "My Webhook" },
+						"type": { "type": "string", "enum": ["webhook", "slack", "discord", "telegram", "email"], "example": "webhook" },
+						"config": { "type": "object", "description": "Channel-specific configuration (e.g. url, to, bot_token)", "example": { "url": "https://example.com/hook" } },
+						"events": { "type": "array", "items": { "type": "string" }, "example": ["host_offline", "host_online"] },
+						"enabled": { "type": "boolean", "example": true }
+					}
+				}
+			}
+		}
+	},
+	"responses": {
+		"201": {
+			"description": "Created notification channel",
+			"content": {
+				"application/json": {
+					"schema": {
+						"type": "object",
+						"properties": {
+							"id": { "type": "integer" },
+							"created_on": { "type": "string", "format": "date-time" },
+							"modified_on": { "type": "string", "format": "date-time" },
+							"name": { "type": "string" },
+							"type": { "type": "string" },
+							"config": { "type": "object" },
+							"events": { "type": "array", "items": { "type": "string" } },
+							"enabled": { "type": "boolean" }
+						}
+					}
+				}
+			}
+		}
+	}
+}

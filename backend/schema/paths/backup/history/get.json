@@ -1,0 +1,51 @@
+{
+	"operationId": "getBackupHistory",
+	"summary": "Get Backup History",
+	"tags": ["backup"],
+	"security": [
+		{
+			"bearerAuth": []
+		}
+	],
+	"responses": {
+		"200": {
+			"description": "Recent backup run records (up to 50)",
+			"content": {
+				"application/json": {
+					"schema": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"id": { "type": "integer" },
+								"created_on": { "type": "string", "format": "date-time" },
+								"status": { "type": "string", "enum": ["ok", "failed"] },
+								"trigger": { "type": "string", "enum": ["manual", "scheduled"] },
+								"destination": { "type": "string", "enum": ["local", "s3"] },
+								"filename": { "type": "string", "nullable": true },
+								"s3_key": { "type": "string", "nullable": true },
+								"size": { "type": "integer" },
+								"encrypted": { "type": "boolean" },
+								"error": { "type": "string", "nullable": true }
+							}
+						}
+					},
+					"example": [
+						{
+							"id": 1,
+							"created_on": "2026-07-12T03:00:01.000Z",
+							"status": "ok",
+							"trigger": "scheduled",
+							"destination": "s3",
+							"filename": "npm-backup-2026-07-12T03-00-00.tar.gz",
+							"s3_key": "npm-backups/npm-backup-2026-07-12T03-00-00.tar.gz",
+							"size": 204800,
+							"encrypted": false,
+							"error": null
+						}
+					]
+				}
+			}
+		}
+	}
+}

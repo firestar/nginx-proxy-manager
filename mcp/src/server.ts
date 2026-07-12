@@ -4,6 +4,8 @@ import { registerAccessListTools } from "./tools/access-lists.js";
 import { registerCertificateTools } from "./tools/certificates.js";
 import { registerDeadHostTools } from "./tools/dead-hosts.js";
 import { registerNodeTools } from "./tools/nodes.js";
+import { registerNotificationTools } from "./tools/notifications.js";
+import { registerUptimeTools } from "./tools/uptime.js";
 import { registerMiscTools } from "./tools/misc.js";
 import { registerProxyHostTools } from "./tools/proxy-hosts.js";
 import { registerRedirectionHostTools } from "./tools/redirection-hosts.js";
@@ -36,6 +38,8 @@ export function createMcpServer(): McpServer {
 	registerAccessListTools(server);
 	registerTagTools(server);
 	registerNodeTools(server);
+	registerNotificationTools(server);
+	registerUptimeTools(server);
 	registerBackupTools(server);
 	registerMiscTools(server);
 

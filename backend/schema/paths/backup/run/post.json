@@ -1,0 +1,36 @@
+{
+	"operationId": "runBackup",
+	"summary": "Trigger Backup Now",
+	"tags": ["backup"],
+	"security": [
+		{
+			"bearerAuth": []
+		}
+	],
+	"responses": {
+		"200": {
+			"description": "Backup result",
+			"content": {
+				"application/json": {
+					"schema": {
+						"type": "object",
+						"properties": {
+							"ok": { "type": "boolean" },
+							"filename": { "type": "string", "example": "npm-backup-2026-07-12T03-00-00.tar.gz" },
+							"size": { "type": "integer", "description": "Archive size in bytes", "example": 204800 },
+							"destination": { "type": "string", "enum": ["local", "s3"], "example": "local" },
+							"s3_key": { "type": "string", "nullable": true, "example": null }
+						}
+					},
+					"example": {
+						"ok": true,
+						"filename": "npm-backup-2026-07-12T03-00-00.tar.gz",
+						"size": 204800,
+						"destination": "local",
+						"s3_key": null
+					}
+				}
+			}
+		}
+	}
+}

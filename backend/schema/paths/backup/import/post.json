@@ -1,0 +1,80 @@
+{
+	"operationId": "importBackup",
+	"summary": "Import Backup Archive",
+	"tags": ["backup"],
+	"security": [
+		{
+			"bearerAuth": []
+		}
+	],
+	"parameters": [
+		{
+			"in": "query",
+			"name": "dry_run",
+			"description": "Return a plan without writing anything",
+			"schema": {
+				"type": "string",
+				"enum": ["1", "true"]
+			},
+			"required": false
+		}
+	],
+	"requestBody": {
+		"description": "Backup archive file (multipart field `file`), optionally with passphrase",
+		"required": true,
+		"content": {
+			"multipart/form-data": {
+				"schema": {
+					"type": "object",
+					"required": ["file"],
+					"properties": {
+						"file": {
+							"type": "string",
+							"format": "binary",
+							"description": "The backup archive (.tar.gz or encrypted)"
+						},
+						"passphrase": {
+							"type": "string",
+							"description": "Decryption passphrase (if archive is encrypted)"
+						}
+					}
+				}
+			}
+		}
+	},
+	"responses": {
+		"200": {
+			"description": "Import result or dry-run plan",
+			"content": {
+				"application/json": {
+					"schema": {
+						"type": "object",
+						"properties": {
+							"dry_run": {
+								"type": "boolean"
+							},
+							"items": {
+								"type": "array",
+								"items": {
+									"type": "object",
+									"properties": {
+										"type": { "type": "string" },
+										"action": { "type": "string" },
+										"ok": { "type": "boolean" },
+										"error": { "type": "string", "nullable": true }
+									}
+								}
+							}
+						}
+					},
+					"example": {
+						"dry_run": false,
+						"items": [
+							{ "type": "proxy_host", "action": "created", "ok": true, "error": null }
+						]
+					}
+				}
+			}
+		}
+	}
+}

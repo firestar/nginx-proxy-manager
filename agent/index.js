@@ -109,10 +109,12 @@ const onMessage = (raw) => {
 			let inner;
 			try {
 				inner = JSON.parse(msg.payload);
+			} catch (err) {
+				log(`Failed to parse signed payload: ${err}`);
+				return;
+			}
 			if (inner.type === "config") {
 				updateChecks(inner.checks || []);
-				handleConfig(inner);
-			}
 				handleConfig(inner);
 			}
 			break;

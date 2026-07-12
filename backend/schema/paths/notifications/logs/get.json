@@ -1,0 +1,52 @@
+{
+	"operationId": "getNotificationLogs",
+	"summary": "Get Notification Logs",
+	"tags": ["notifications"],
+	"security": [
+		{
+			"bearerAuth": []
+		}
+	],
+	"parameters": [
+		{
+			"in": "query",
+			"name": "limit",
+			"description": "Maximum number of log entries to return (capped at 500)",
+			"schema": { "type": "integer", "minimum": 1, "maximum": 500, "default": 100 },
+			"required": false
+		}
+	],
+	"responses": {
+		"200": {
+			"description": "Recent notification log entries",
+			"content": {
+				"application/json": {
+					"schema": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"id": { "type": "integer" },
+								"created_on": { "type": "string", "format": "date-time" },
+								"channel_id": { "type": "integer" },
+								"event": { "type": "string", "description": "Event key (eventName:objectId)" },
+								"status": { "type": "string", "enum": ["sent", "failed"] },
+								"detail": { "type": "string", "nullable": true }
+							}
+						}
+					},
+					"example": [
+						{
+							"id": 42,
+							"created_on": "2026-07-12T03:00:00.000Z",
+							"channel_id": 1,
+							"event": "host_offline:3",
+							"status": "sent",
+							"detail": null
+						}
+					]
+				}
+			}
+		}
+	}
+}

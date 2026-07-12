@@ -94,3 +94,71 @@ describe("backup s3 client", () => {
 		}
 	});
 });
+
+describe("backup manifest secret scrubbing", () => {
+	// Mirror the inline scrub logic from internal/backup.js — tests pin the contract.
+	const scrubNode = (n) => {
+		const { token_hash, ...rest } = n;
+		if (rest.meta) {
+			const { hmac_secret, ...safeMeta } = rest.meta;
+			rest.meta = safeMeta;
+		}
+		return rest;
+	};
+
+	const scrubNotificationChannel = (ch) => {
+		const { config, ...rest } = ch;
+		return { ...rest, config: {} };
+	};
+
+	it("strips token_hash from node", () => {
+		const node = { id: 1, name: "edge-1", token_hash: "abc123", status: "active", meta: {} };
+		const safe = scrubNode(node);
+		assert.ok(!("token_hash" in safe), "token_hash must be absent");
+		assert.equal(safe.name, "edge-1");
+		assert.equal(safe.status, "active");
+	});
+
+	it("strips meta.hmac_secret from node but keeps other meta fields", () => {
+		const node = { id: 2, name: "edge-2", token_hash: "x", meta: { hmac_secret: "supersecret", version: "1.2.3" } };
+		const safe = scrubNode(node);
+		assert.ok(!("hmac_secret" in safe.meta), "hmac_secret must be absent from meta");
+		assert.equal(safe.meta.version, "1.2.3");
+	});
+
+	it("handles node with null meta without throwing", () => {
+		const node = { id: 3, name: "edge-3", token_hash: "y", meta: null };
+		const safe = scrubNode(node);
+		assert.equal(safe.meta, null);
+	});
+
+	it("strips config from notification_channel, preserves identity fields", () => {
+		const ch = {
+			id: 10, name: "Slack alerts", type: "slack",
+			config: { webhook_url: "https://hooks.slack.com/secret", token: "xoxb-xxx" },
+			events: ["backup_failed"], enabled: true,
+		};
+		const safe = scrubNotificationChannel(ch);
+		assert.deepEqual(safe.config, {}, "config must be empty object");
+		assert.equal(safe.name, "Slack alerts");
+		assert.equal(safe.type, "slack");
+		assert.deepEqual(safe.events, ["backup_failed"]);
+		assert.equal(safe.enabled, true);
+	});
+
+	it("round-trips node + notification_channel through archive without secrets", async () => {
+		const node = { id: 1, name: "n1", token_hash: "secret-hash", meta: { hmac_secret: "secret-hmac", ip: "10.0.0.1" } };
+		const ch = { id: 1, name: "Webhook", type: "webhook", config: { url: "https://example.com/hook" }, events: [] };
+		const safeNode = scrubNode(node);
+		const safeCh = scrubNotificationChannel(ch);
+		const manifest = { schema_version: 1, nodes: [safeNode], notification_channels: [safeCh] };
+		const entries = [{ name: "manifest.json", data: JSON.stringify(manifest) }];
+		const buf = await archive.pack(entries);
+		const files = await archive.unpack(buf);
+		const restored = JSON.parse(files.get("manifest.json").toString());
+		assert.ok(!("token_hash" in restored.nodes[0]), "token_hash absent after round-trip");
+		assert.ok(!("hmac_secret" in restored.nodes[0].meta), "hmac_secret absent after round-trip");
+		assert.deepEqual(restored.notification_channels[0].config, {}, "config empty after round-trip");
+		assert.equal(restored.nodes[0].meta.ip, "10.0.0.1");
+	});
+});

@@ -1,0 +1,68 @@
+{
+	"operationId": "setBackupSchedule",
+	"summary": "Update Backup Schedule",
+	"tags": ["backup"],
+	"security": [
+		{
+			"bearerAuth": []
+		}
+	],
+	"requestBody": {
+		"description": "Backup schedule configuration. Secret fields (s3.secret_key, passphrase) are write-only; omit to keep existing values.",
+		"required": true,
+		"content": {
+			"application/json": {
+				"schema": {
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"enabled": { "type": "boolean" },
+						"cron": { "type": "string", "description": "Cron expression", "example": "0 3 * * *" },
+						"retention_count": { "type": "integer", "minimum": 1, "example": 7 },
+						"encrypt": { "type": "boolean" },
+						"passphrase": { "type": "string", "description": "Write-only encryption passphrase" },
+						"s3": {
+							"type": "object",
+							"additionalProperties": false,
+							"properties": {
+								"endpoint": { "type": "string" },
+								"region": { "type": "string" },
+								"bucket": { "type": "string" },
+								"access_key": { "type": "string" },
+								"secret_key": { "type": "string", "description": "Write-only" },
+								"prefix": { "type": "string" },
+								"force_path_style": { "type": "boolean" }
+							}
+						}
+					}
+				},
+				"example": {
+					"enabled": true,
+					"cron": "0 3 * * *",
+					"retention_count": 7,
+					"encrypt": false
+				}
+			}
+		}
+	},
+	"responses": {
+		"200": {
+			"description": "Updated backup schedule (secrets redacted)",
+			"content": {
+				"application/json": {
+					"schema": {
+						"type": "object",
+						"properties": {
+							"enabled": { "type": "boolean" },
+							"cron": { "type": "string" },
+							"retention_count": { "type": "integer" },
+							"encrypt": { "type": "boolean" },
+							"has_passphrase": { "type": "boolean" },
+							"s3": { "type": "object" }
+						}
+					}
+				}
+			}
+		}
+	}
+}

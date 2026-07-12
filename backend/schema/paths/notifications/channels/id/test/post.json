@@ -1,0 +1,37 @@
+{
+	"operationId": "testNotificationChannel",
+	"summary": "Test Notification Channel",
+	"tags": ["notifications"],
+	"security": [
+		{
+			"bearerAuth": []
+		}
+	],
+	"parameters": [
+		{
+			"in": "path",
+			"name": "id",
+			"description": "Notification channel ID",
+			"schema": { "type": "integer", "minimum": 1 },
+			"required": true,
+			"example": 1
+		}
+	],
+	"responses": {
+		"200": {
+			"description": "Test result",
+			"content": {
+				"application/json": {
+					"schema": {
+						"type": "object",
+						"properties": {
+							"success": { "type": "boolean" },
+							"error": { "type": "string", "nullable": true }
+						}
+					},
+					"example": { "success": true, "error": null }
+				}
+			}
+		}
+	}
+}

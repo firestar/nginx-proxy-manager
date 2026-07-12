@@ -1,0 +1,40 @@
+{
+	"operationId": "regenerateNodeToken",
+	"summary": "Regenerate Node Enrollment Token",
+	"tags": ["nodes"],
+	"security": [
+		{
+			"bearerAuth": []
+		}
+	],
+	"parameters": [
+		{
+			"in": "path",
+			"name": "nodeID",
+			"description": "Node ID",
+			"schema": { "type": "integer", "minimum": 1 },
+			"required": true,
+			"example": 1
+		}
+	],
+	"responses": {
+		"200": {
+			"description": "New one-time enrollment token",
+			"content": {
+				"application/json": {
+					"schema": {
+						"type": "object",
+						"properties": {
+							"token": { "type": "string", "description": "New one-time enrollment token — invalidates the previous credential" },
+							"setup_command": { "type": "string" }
+						}
+					},
+					"example": {
+						"token": "npma_abcdef1234567890abcdef1234567890abcdef1234567890",
+						"setup_command": "docker run -d --name npm-agent ..."
+					}
+				}
+			}
+		}
+	}
+}

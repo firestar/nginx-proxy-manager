@@ -574,6 +574,12 @@ const internalProxyHost = {
 		return access
 			.can("proxy_hosts:update", data.id)
 			.then(() => {
+				return internalProxyHost.get(access, { id: data.id });
+			})
+			.then((row) => {
+				if (!row?.id) {
+					throw new errs.ItemNotFoundError(data.id);
+				}
 				if (fs.existsSync(filePath)) {
 					return { html: fs.readFileSync(filePath, { encoding: "utf8" }) };
 				}

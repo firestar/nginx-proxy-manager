@@ -1,0 +1,36 @@
+{
+	"operationId": "deleteNode",
+	"summary": "Delete Node",
+	"tags": ["nodes"],
+	"security": [
+		{
+			"bearerAuth": []
+		}
+	],
+	"parameters": [
+		{
+			"in": "path",
+			"name": "nodeID",
+			"description": "Node ID",
+			"schema": { "type": "integer", "minimum": 1 },
+			"required": true,
+			"example": 1
+		}
+	],
+	"responses": {
+		"200": {
+			"description": "Node deleted",
+			"content": {
+				"application/json": {
+					"schema": {
+						"type": "object",
+						"properties": {
+							"deleted": { "type": "boolean", "example": true }
+						}
+					},
+					"example": { "deleted": true }
+				}
+			}
+		}
+	}
+}

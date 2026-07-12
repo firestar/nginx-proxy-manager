@@ -1,0 +1,56 @@
+{
+	"operationId": "updateNode",
+	"summary": "Update Node",
+	"tags": ["nodes"],
+	"security": [
+		{
+			"bearerAuth": []
+		}
+	],
+	"parameters": [
+		{
+			"in": "path",
+			"name": "nodeID",
+			"description": "Node ID",
+			"schema": { "type": "integer", "minimum": 1 },
+			"required": true,
+			"example": 1
+		}
+	],
+	"requestBody": {
+		"description": "Fields to update",
+		"required": true,
+		"content": {
+			"application/json": {
+				"schema": {
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"name": { "type": "string", "minLength": 1, "example": "Edge Node 1 (renamed)" }
+					}
+				}
+			}
+		}
+	},
+	"responses": {
+		"200": {
+			"description": "Updated node",
+			"content": {
+				"application/json": {
+					"schema": {
+						"type": "object",
+						"properties": {
+							"id": { "type": "integer" },
+							"created_on": { "type": "string", "format": "date-time" },
+							"modified_on": { "type": "string", "format": "date-time" },
+							"name": { "type": "string" },
+							"status": { "type": "string", "enum": ["pending", "online", "offline"] },
+							"connected": { "type": "boolean" },
+							"meta": { "type": "object" }
+						}
+					}
+				}
+			}
+		}
+	}
+}

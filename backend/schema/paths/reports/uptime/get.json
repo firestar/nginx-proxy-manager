@@ -1,0 +1,50 @@
+{
+	"operationId": "reportsUptime",
+	"summary": "Get Uptime Report",
+	"tags": ["reports"],
+	"security": [
+		{
+			"bearerAuth": []
+		}
+	],
+	"responses": {
+		"200": {
+			"description": "Uptime statistics for all check-enabled proxy hosts",
+			"content": {
+				"application/json": {
+					"schema": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"id": { "type": "integer" },
+								"domain_names": { "type": "array", "items": { "type": "string" } },
+								"status": { "type": "string", "enum": ["up", "down", "unknown"] },
+								"latency_ms": { "type": "integer", "nullable": true },
+								"last_checked": { "type": "string", "nullable": true },
+								"uptime": {
+									"type": "object",
+									"properties": {
+										"d1": { "type": "number", "description": "Uptime % over last 24 hours" },
+										"d7": { "type": "number", "description": "Uptime % over last 7 days" },
+										"d90": { "type": "number", "description": "Uptime % over last 90 days" }
+									}
+								}
+							}
+						}
+					},
+					"example": [
+						{
+							"id": 1,
+							"domain_names": ["example.com"],
+							"status": "up",
+							"latency_ms": 42,
+							"last_checked": "2026-07-12 10:00:00",
+							"uptime": { "d1": 100.0, "d7": 99.8, "d90": 99.5 }
+						}
+					]
+				}
+			}
+		}
+	}
+}

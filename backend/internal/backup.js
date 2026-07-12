@@ -22,6 +22,8 @@ import streamTagModel from "../models/stream_tag.js";
 import tagModel from "../models/tag.js";
 import userModel from "../models/user.js";
 import userTagModel from "../models/user_tag.js";
+import nodeModel from "../models/node.js";
+import notificationChannelModel from "../models/notification_channel.js";
 import pjson from "../package.json" with { type: "json" };
 import db from "../db.js";
 import internalNginx from "./nginx.js";
@@ -87,11 +89,31 @@ const gather = async () => {
 	const streamTags = await streamTagModel.query();
 	const userTags = await userTagModel.query();
 	const settings = await settingModel.query();
+	const nodes = await nodeModel.query().where("is_deleted", 0);
+	const notificationChannels = await notificationChannelModel.query().where("is_deleted", 0);
 
 	// Strip anything sensitive from users just in case a column is added later.
 	const safeUsers = users.map((u) => {
 		const { secret, ...rest } = u;
 		return rest;
+	});
+
+	// Strip node secrets: token_hash (auth credential) and meta.hmac_secret (plaintext signing key).
+	// Nodes must re-enroll after restore.
+	const safeNodes = nodes.map((n) => {
+		const { token_hash, ...rest } = n;
+		if (rest.meta) {
+			const { hmac_secret, ...safeMeta } = rest.meta;
+			rest.meta = safeMeta;
+		}
+		return rest;
+	});
+
+	// Strip notification channel config (contains webhook tokens, SMTP passwords).
+	// Channels are restored with name/type/events/enabled; credentials must be re-entered.
+	const safeNotificationChannels = notificationChannels.map((ch) => {
+		const { config, ...rest } = ch;
+		return { ...rest, config: {} };
 	});
 
 	const manifest = {
@@ -114,6 +136,8 @@ const gather = async () => {
 		stream_tags: streamTags,
 		user_tags: userTags,
 		settings,
+		nodes: safeNodes,
+		notification_channels: safeNotificationChannels,
 	};
 
 	entries.push({ name: "manifest.json", data: JSON.stringify(manifest, null, 2) });
@@ -185,6 +209,8 @@ const entityLabel = {
 	dead_hosts: (r) => (r.domain_names || []).join(", "),
 	streams: (r) => `:${r.incoming_port}`,
 	settings: (r) => r.id,
+	nodes: (r) => r.name,
+	notification_channels: (r) => `${r.name} (${r.type})`,
 };
 
 const findExisting = {
@@ -198,6 +224,8 @@ const findExisting = {
 	dead_hosts: (rows, item) => rows.filter((r) => sortedDomains(r) === sortedDomains(item)),
 	streams: (rows, item) => rows.filter((r) => r.incoming_port === item.incoming_port),
 	settings: (rows, item) => rows.filter((r) => r.id === item.id),
+	nodes: (rows, item) => rows.filter((r) => r.name === item.name),
+	notification_channels: (rows, item) => rows.filter((r) => r.name === item.name && r.type === item.type),
 };
 
 // Current DB rows for each entity type, used for matching during plan/import.
@@ -211,6 +239,8 @@ const loadCurrent = async () => ({
 	dead_hosts: await deadHostModel.query().where("is_deleted", 0),
 	streams: await streamModel.query().where("is_deleted", 0),
 	settings: await settingModel.query(),
+	nodes: await nodeModel.query().where("is_deleted", 0),
+	notification_channels: await notificationChannelModel.query().where("is_deleted", 0),
 });
 
 const PLAN_TYPES = [
@@ -223,6 +253,8 @@ const PLAN_TYPES = [
 	"dead_hosts",
 	"streams",
 	"settings",
+	"nodes",
+	"notification_channels",
 ];
 
 /**
@@ -415,6 +447,9 @@ const importAll = async (manifest, files) => {
 				if ("access_list_id" in insert) {
 					insert.access_list_id = remapFk(insert.access_list_id, aclMap);
 				}
+				if ("node_id" in insert) {
+					insert.node_id = null;
+				}
 				const created = await model.query(trx).insertAndFetch(insert);
 				// Tag pivots.
 				for (const pv of (manifest[pivotKey] || []).filter((p) => p[pivotFk] === item.id)) {
@@ -468,6 +503,27 @@ const importAll = async (manifest, files) => {
 				await settingModel.query(trx).insert(item);
 				results.push({ type: "settings", name: item.id, action: "create" });
 			}
+		}
+
+		// 8. Notification channels — config was scrubbed on export; credentials need re-entry after restore.
+		for (const item of manifest.notification_channels || []) {
+			const { existing, conflict } = resolveMatch("notification_channels", item);
+			if (conflict) {
+				results.push({ type: "notification_channels", name: entityLabel.notification_channels(item), action: "conflict" });
+				continue;
+			}
+			if (existing) {
+				results.push({ type: "notification_channels", name: entityLabel.notification_channels(item), action: "skip" });
+			} else {
+				await notificationChannelModel.query(trx).insert(stripInsert(item));
+				results.push({ type: "notification_channels", name: entityLabel.notification_channels(item), action: "create" });
+			}
+		}
+
+		// 9. Nodes — included in manifest for reference only; token_hash was scrubbed.
+		// Nodes must re-enroll after restore.
+		for (const item of manifest.nodes || []) {
+			results.push({ type: "nodes", name: entityLabel.nodes(item), action: "skip" });
 		}
 	});
 
