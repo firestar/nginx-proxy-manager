@@ -11,91 +11,93 @@ const __dirname = dirname(__filename);
 
 const internalNginx = {
 	/**
-	 * This will:
-	 * - test the nginx config first to make sure it's OK
-	 * - create / recreate the config for the host
-	 * - test again
-	 * - IF OK:  update the meta with online status
-	 * - IF BAD: update the meta with offline status and remove the config entirely
-	 * - then reload nginx
+	 * Filter nginx test output to fatal lines only ([emerg]/[crit]).
+	 * Drops [warn] noise and the docker /var/log/nginx/error.log false-positive.
+	 * Falls back to all non-false-positive lines if no fatal line found.
+	 *
+	 * @param   {String} msg
+	 * @returns {String}
+	 */
+	filterFatalLines: (msg) => {
+		const lines = msg.split("\n").filter((l) => l.indexOf("/var/log/nginx/error.log") === -1);
+		const fatal = lines.filter((l) => l.includes("[emerg]") || l.includes("[crit]"));
+		return (fatal.length ? fatal : lines).join("\n").trim();
+	},
+
+	/**
+	 * Safe apply: backup existing config, write candidate, test.
+	 * On success: remove backup, patch meta online, reload.
+	 * On failure: restore backup (or delete if new host), patch meta offline,
+	 *             do NOT reload, throw ValidationError with fatal lines.
 	 *
 	 * @param   {Object|String}  model
 	 * @param   {String}         host_type
 	 * @param   {Object}         host
 	 * @returns {Promise}
 	 */
-	configure: (model, host_type, host) => {
-		let combined_meta = {};
+	configure: async (model, host_type, host) => {
+		// 1. Baseline: global nginx must be OK before we touch anything.
+		await internalNginx.test();
 
-		return internalNginx
-			.test()
-			.then(() => {
-				// Nginx is OK
-				// We're deleting this config regardless.
-				// Don't throw errors, as the file may not exist at all
-				// Delete the .err file too
-				return internalNginx.deleteConfig(host_type, host, false, true);
-			})
-			.then(() => {
-				return internalNginx.generateConfig(host_type, host);
-			})
-			.then(() => {
-				// Test nginx again and update meta with result
-				return internalNginx
-					.test()
-					.then(() => {
-						// nginx is ok
-						combined_meta = _.assign({}, host.meta, {
-							nginx_online: true,
-							nginx_err: null,
-						});
+		const filename = internalNginx.getConfigName(
+			internalNginx.getFileFriendlyHostType(host_type),
+			host.id,
+		);
+		const bakFile = `${filename}.bak`;
+		const existed = fs.existsSync(filename);
 
-						return model.query().where("id", host.id).patch({
-							meta: combined_meta,
-						});
-					})
-					.catch((err) => {
-						// Remove the error_log line because it's a docker-ism false positive that doesn't need to be reported.
-						// It will always look like this:
-						//   nginx: [alert] could not open error log file: open() "/var/log/nginx/error.log" failed (6: No such device or address)
+		// 2. Backup existing config so we can restore on failure.
+		if (existed) {
+			fs.copyFileSync(filename, bakFile);
+		}
 
-						const valid_lines = [];
-						const err_lines = err.message.split("\n");
-						err_lines.map((line) => {
-							if (line.indexOf("/var/log/nginx/error.log") === -1) {
-								valid_lines.push(line);
-							}
-							return true;
-						});
+		// 3. Write candidate config.
+		await internalNginx.generateConfig(host_type, host);
 
-						debug(logger, "Nginx test failed:", valid_lines.join("\n"));
+		// 4. Test candidate.
+		try {
+			await internalNginx.test();
+		} catch (testErr) {
+			// Restore previous working config (or remove if this was a new host).
+			if (existed) {
+				try {
+					fs.renameSync(bakFile, filename);
+				} catch (_) {
+					// best-effort
+				}
+			} else {
+				internalNginx.deleteFile(filename);
+			}
 
-						// config is bad, update meta and delete config
-						combined_meta = _.assign({}, host.meta, {
-							nginx_online: false,
-							nginx_err: valid_lines.join("\n"),
-						});
+			const fatalMsg = internalNginx.filterFatalLines(testErr.message);
+			debug(logger, "Nginx test failed (config restored):", fatalMsg);
 
-						return model
-							.query()
-							.where("id", host.id)
-							.patch({
-								meta: combined_meta,
-							})
-							.then(() => {
-								internalNginx.renameConfigAsError(host_type, host);
-							})
-							.then(() => {
-								return internalNginx.deleteConfig(host_type, host, true);
-							});
-					});
-			})
-			.then(() => {
-				return internalNginx.reload();
-			})
-			.then(() => {
-				return combined_meta;
+			const combined_meta = _.assign({}, host.meta, {
+				nginx_online: false,
+				nginx_err: fatalMsg,
 			});
+			await model.query().where("id", host.id).patch({ meta: combined_meta });
+
+			throw new errs.ValidationError(fatalMsg);
+		}
+
+		// 5. Success: remove backup, update meta, reload.
+		if (existed) {
+			try {
+				fs.unlinkSync(bakFile);
+			} catch (_) {
+				// best-effort
+			}
+		}
+
+		const combined_meta = _.assign({}, host.meta, {
+			nginx_online: true,
+			nginx_err: null,
+		});
+		await model.query().where("id", host.id).patch({ meta: combined_meta });
+		await internalNginx.reload();
+
+		return combined_meta;
 	},
 
 	/**

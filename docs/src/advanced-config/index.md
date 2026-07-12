@@ -266,3 +266,38 @@ And you'll probably want to expose that port as well
 ```
 
 Then you'll be able to access admin UI at `http://localhost:8000`
+
+## Validate-on-save and Duplicate-directive Protection
+
+When you save a proxy host (or redirection/404/stream host), NPM applies the new nginx
+configuration safely:
+
+1. **Backup**: the existing `.conf` is copied to `.conf.bak` before writing the candidate.
+2. **`nginx -t`**: the candidate config is tested.
+3. **On failure**: the backup is restored automatically. Nginx is **not** reloaded and the
+   previous config keeps serving traffic. The save returns HTTP 400 with the fatal nginx
+   error lines (`[emerg]`/`[crit]`), displayed inline in the modal.
+4. **On success**: the backup is removed and nginx reloads.
+
+The host's `meta.nginx_online` / `meta.nginx_err` fields reflect the last apply result
+and are shown as an **Nginx** column badge in each host table (green = OK, red = Error
+with the first fatal line as a tooltip).
+
+### Avoiding duplicate directives in Advanced Config
+
+The proxy host template already emits these directives when the corresponding structured
+field is set:
+
+| Directive | Structured field |
+|-----------|------------------|
+| `client_max_body_size` | Client Max Body Size |
+| `proxy_connect_timeout` | Proxy Connect Timeout |
+| `proxy_send_timeout` | Proxy Send Timeout |
+| `proxy_read_timeout` | Proxy Read Timeout |
+| `proxy_buffering` | Proxy Buffering |
+
+If **Advanced Config** contains any of these while the structured field is also set,
+NPM rejects the save with HTTP 400 before writing any file. The Advanced Config editor
+shows a non-blocking warning as you type.
+
+To resolve: either remove the directive from Advanced Config, or clear the structured field.

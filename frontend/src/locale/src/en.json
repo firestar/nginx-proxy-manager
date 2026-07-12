@@ -380,6 +380,9 @@
 	"column.source": {
 		"defaultMessage": "Source"
 	},
+	"column.nginx-status": {
+		"defaultMessage": "Nginx"
+	},
 	"column.ssl": {
 		"defaultMessage": "SSL"
 	},
@@ -712,6 +715,9 @@
 	},
 	"offline": {
 		"defaultMessage": "Offline"
+	},
+	"nginx.error": {
+		"defaultMessage": "Error"
 	},
 	"online": {
 		"defaultMessage": "Online"

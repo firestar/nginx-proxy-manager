@@ -1,5 +1,6 @@
 import _ from "lodash";
 import errs from "../lib/error.js";
+import nginxLint from "./nginx-lint.js";
 import { castJsonIfNeed } from "../lib/helpers.js";
 import utils from "../lib/utils.js";
 import proxyHostModel from "../models/proxy_host.js";
@@ -62,6 +63,8 @@ const internalProxyHost = {
 					thisData.advanced_config = "";
 				}
 
+				// Reject if advanced_config duplicates a template-emitted directive.
+				nginxLint.check(thisData.advanced_config, thisData);
 				return proxyHostModel.query().insertAndFetch(thisData).then(utils.omitRow(omissions()));
 			})
 			.then((row) => {
@@ -193,6 +196,11 @@ const internalProxyHost = {
 				);
 
 				thisData = internalHost.cleanSslHstsData(thisData, row);
+				// Reject if advanced_config duplicates a template-emitted directive.
+				nginxLint.check(
+					typeof thisData.advanced_config !== "undefined" ? thisData.advanced_config : row.advanced_config,
+					_.assign({}, row, thisData),
+				);
 
 				return proxyHostModel
 					.query()

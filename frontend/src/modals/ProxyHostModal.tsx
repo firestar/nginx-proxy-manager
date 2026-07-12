@@ -109,7 +109,7 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 					}
 					onSubmit={onSubmit}
 				>
-					{() => (
+					{({ values }: any) => (
 						<Form>
 							<Modal.Header closeButton>
 								<Modal.Title>
@@ -358,7 +358,13 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 											</div>
 											<div className="tab-pane" id="tab-advanced" role="tabpanel">
 												<CommonNginxOptionsFields />
-												<NginxConfigField />
+												<NginxConfigField guardedDirectives={[
+													...values.clientMaxBodySize ? ["client_max_body_size"] : [],
+													...values.proxyConnectTimeout != null ? ["proxy_connect_timeout"] : [],
+													...values.proxySendTimeout != null ? ["proxy_send_timeout"] : [],
+													...values.proxyReadTimeout != null ? ["proxy_read_timeout"] : [],
+													...values.proxyBuffering ? ["proxy_buffering"] : [],
+												]} />
 											</div>
 										</div>
 									</div>

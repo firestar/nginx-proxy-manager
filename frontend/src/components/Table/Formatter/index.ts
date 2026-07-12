@@ -9,4 +9,5 @@ export * from "./GravatarFormatter";
 export * from "./RolesFormatter";
 export * from "./TagsFormatter";
 export * from "./TrueFalseFormatter";
+export * from "./NginxOnlineFormatter";
 export * from "./ValueWithDateFormatter";
