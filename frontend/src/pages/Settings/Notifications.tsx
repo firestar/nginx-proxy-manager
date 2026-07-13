@@ -8,6 +8,8 @@ import {
 } from "src/hooks";
 import { showNotificationChannelModal } from "src/modals/NotificationChannelModal";
 import type { NotificationChannel } from "src/api/backend";
+import { showDeleteConfirmModal } from "src/modals/DeleteConfirmModal";
+import { T } from "src/locale";
 
 const EVENT_LABELS: Record<string, string> = {
 	"host.offline": "Host Offline",
@@ -43,18 +45,18 @@ export default function Notifications() {
 		<>
 			<div className="card-body pb-0">
 				<div className="d-flex align-items-center mb-3">
-					<h3 className="mb-0">Notification Channels</h3>
+					<h3 className="mb-0"><T id="notifications.channels" /></h3>
 					<Button
 						className="ms-auto"
 						actionType="primary"
 						onClick={() => showNotificationChannelModal()}
 					>
-						Add Channel
+						<T id="notifications.add-channel" />
 					</Button>
 				</div>
 
 				{channels.length === 0 ? (
-					<p className="text-muted">No channels configured. Add one to start receiving alerts.</p>
+					<p className="text-muted"><T id="notifications.no-channels" /></p>
 				) : (
 					<div className="table-responsive">
 						<table className="table table-vcenter">
@@ -106,9 +108,11 @@ export default function Notifications() {
 											<Button
 												className="btn-sm btn-danger"
 												onClick={() => {
-													if (confirm(`Delete channel "${ch.name}"?`)) {
-														deleteChannel(ch.id!);
-													}
+													showDeleteConfirmModal({
+														title: <T id="object.delete" tData={{ object: "notifications.channel" }} />,
+														onConfirm: () => deleteChannel(ch.id!),
+														children: <T id="object.delete.content" tData={{ object: "notifications.channel" }} />,
+													});
 												}}
 											>
 												Delete
@@ -129,9 +133,9 @@ export default function Notifications() {
 			</div>
 
 			<div className="card-body border-top mt-3">
-				<h4 className="mb-3">Recent Deliveries</h4>
+				<h4 className="mb-3"><T id="notifications.recent-deliveries" /></h4>
 				{logs.length === 0 ? (
-					<p className="text-muted">No delivery logs yet.</p>
+					<p className="text-muted"><T id="notifications.no-deliveries" /></p>
 				) : (
 					<div className="table-responsive">
 						<table className="table table-sm table-vcenter">

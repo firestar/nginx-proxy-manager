@@ -7,7 +7,7 @@ import { deleteStream, type Tag, toggleStream } from "src/api/backend";
 import { Button, HasPermission, LoadingPage, TagFilter } from "src/components";
 import { useStreams } from "src/hooks";
 import { T } from "src/locale";
-import { showBulkTagModal, showDeleteConfirmModal, showHelpModal, showStreamModal } from "src/modals";
+import { showBulkTagModal, showDeleteConfirmModal, showHelpModal, showStreamModal, showViewConfigModal } from "src/modals";
 import { MANAGE, STREAMS } from "src/modules/Permissions";
 import { showObjectSuccess } from "src/notifications";
 import Table from "./Table";
@@ -142,6 +142,7 @@ export default function TableWrapper() {
 					onNew={() => showStreamModal("new")}
 					onTagClick={handleTagClick}
 					onSelectionChange={setSelectedIds}
+					onViewConfig={(id: number) => showViewConfigModal("stream", id)}
 				/>
 			</div>
 		</div>

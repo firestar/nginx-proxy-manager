@@ -10,6 +10,7 @@ import internalNginx from "./nginx.js";
 import internalNode from "./node.js";
 import internalTag from "./tag.js";
 import { applyHostVisibility, assertTagWrite, getUserTagIds } from "../lib/host-visibility.js";
+import { assertPortAvailable } from "./stream-port-validation.js";
 
 const omissions = () => {
 	return ["is_deleted", "owner.is_deleted", "certificate.is_deleted"];
@@ -44,8 +45,9 @@ const internalStream = {
 				// M1: hosts pinned to a remote node need DNS-challenge (or custom) certs
 				return internalNode.assertHostAllowed(data.node_id, create_certificate ? "new" : data.certificate_id, data.node_all);
 			})
-			.then(() => {
-				// TODO: At this point the existing ports should have been checked
+			.then(async () => {
+				const existingStreams = await streamModel.query().where("is_deleted", 0);
+				assertPortAvailable(data, existingStreams);
 				data.owner_user_id = access.token.getUserId(1);
 
 				if (typeof data.meta === "undefined") {
@@ -129,7 +131,6 @@ const internalStream = {
 					const userTagIds = await access.loadUserTagIds();
 					assertTagWrite({ visibility: "tags", tagIds, userTagIds });
 				}
-				// TODO: at this point the existing streams should have been checked
 				return internalStream.get(access, { id: thisData.id });
 			})
 			.then(async (row) => {
@@ -139,6 +140,16 @@ const internalStream = {
 						`Stream could not be updated, IDs do not match: ${row.id} !== ${thisData.id}`,
 					);
 				}
+				const existingStreams = await streamModel.query().where("is_deleted", 0);
+				const portCandidate = {
+					id: thisData.id,
+					incoming_port: thisData.incoming_port !== undefined ? thisData.incoming_port : row.incoming_port,
+					tcp_forwarding: thisData.tcp_forwarding !== undefined ? thisData.tcp_forwarding : row.tcp_forwarding,
+					udp_forwarding: thisData.udp_forwarding !== undefined ? thisData.udp_forwarding : row.udp_forwarding,
+					node_id: thisData.node_id !== undefined ? thisData.node_id : row.node_id,
+					node_all: thisData.node_all !== undefined ? thisData.node_all : row.node_all,
+				};
+				assertPortAvailable(portCandidate, existingStreams);
 
 				// M1: hosts pinned to a remote node need DNS-challenge (or custom) certs
 				await internalNode.assertHostAllowed(
@@ -454,6 +465,33 @@ const internalStream = {
 			return Number.parseInt(row.count, 10);
 		});
 	},
+
+	getConfig: async (access, data) => {
+		await access.can("streams:config", data.id);
+		const row = await internalStream.get(access, {
+			id: data.id,
+			expand: ["certificate"],
+		});
+		const config = await internalNginx.renderHostConfig("stream", row);
+		return { config };
+	},
+
+	testConfig: async (access, payload) => {
+		const id = payload.id || null;
+		await access.can("streams:config", id);
+		let base = {};
+		if (id) {
+			base = await internalStream.get(access, { id, expand: ["certificate"] });
+		}
+		const candidate = _.assign({}, base, payload);
+		if (!candidate.id) {
+			candidate.id = 0;
+		}
+		const pinnedRemote = !!(candidate.node_id || candidate.node_all);
+		const result = await internalNginx.testHostConfig("stream", candidate);
+		return pinnedRemote ? { ...result, tested_locally: true } : result;
+	},
+
 };
 
 export default internalStream;

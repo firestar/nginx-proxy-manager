@@ -139,6 +139,14 @@ export interface ProxyLocation {
 	forwardPort: number;
 }
 
+export interface ProxyUpstream {
+	host: string;
+	port: number;
+	weight?: number;
+	maxFails?: number;
+	failTimeout?: number;
+	backup?: boolean;
+}
 export interface ProxyHost {
 	id: number;
 	createdOn: string;
@@ -176,6 +184,8 @@ export interface ProxyHost {
 	tagIds?: number[];
 	nodeId?: number | null;
 	nodeAll?: boolean;
+	upstreams?: ProxyUpstream[] | null;
+	balanceMethod?: string | null;
 	// Expansions:
 	owner?: User;
 	accessList?: AccessList;

@@ -5,6 +5,7 @@ import { type BackupImportResult, downloadBackup, importBackup, runBackupNow } f
 import { Button, Loading } from "src/components";
 import { useBackupHistory, useBackupSchedule, useSetBackupSchedule } from "src/hooks";
 import { showObjectSuccess } from "src/notifications";
+import { T } from "src/locale";
 
 const actionColor: Record<string, string> = {
 	create: "text-green",
@@ -109,7 +110,7 @@ export default function Backup() {
 			) : null}
 
 			{/* Download now */}
-			<h3>Download backup</h3>
+			<h3><T id="backup.download" /></h3>
 			<p className="text-muted">
 				Exports all hosts, certificates, access lists, tags, settings and users (without secrets) as a tar.gz
 				archive.
@@ -142,7 +143,7 @@ export default function Backup() {
 			<hr />
 
 			{/* Import */}
-			<h3>Restore / import</h3>
+			<h3><T id="backup.restore" /></h3>
 			<p className="text-muted">
 				Upload a backup archive, preview the changes, then confirm. Import runs in a single transaction and
 				regenerates configs through the safe nginx test path.
@@ -211,7 +212,7 @@ export default function Backup() {
 			<hr />
 
 			{/* Schedule + S3 */}
-			<h3>Scheduled backups (S3 / MinIO)</h3>
+			<h3><T id="backup.scheduled" /></h3>
 			<Formik
 				enableReinitialize
 				initialValues={{
@@ -337,7 +338,7 @@ export default function Backup() {
 			<hr />
 
 			{/* History */}
-			<h3>Run history</h3>
+			<h3><T id="backup.run-history" /></h3>
 			{history && history.length ? (
 				<div className="table-responsive">
 					<table className="table table-sm">

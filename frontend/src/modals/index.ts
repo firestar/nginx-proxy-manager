@@ -20,3 +20,4 @@ export * from "./StreamModal";
 export * from "./TagModal";
 export * from "./TwoFactorModal";
 export * from "./UserModal";
+export * from "./ViewConfigModal";

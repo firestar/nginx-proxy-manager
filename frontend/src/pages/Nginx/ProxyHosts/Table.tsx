@@ -1,4 +1,4 @@
-import { IconChartBar, IconDotsVertical, IconEdit, IconPower, IconTool, IconTrash } from "@tabler/icons-react";
+import { IconChartBar, IconCode, IconDotsVertical, IconEdit, IconPower, IconTool, IconTrash } from "@tabler/icons-react";
 import {
 	createColumnHelper,
 	getCoreRowModel,
@@ -37,6 +37,7 @@ interface Props {
 	onTagClick?: (tag: Tag) => void;
 	onSelectionChange?: (ids: number[]) => void;
 	onMetrics?: (id: number) => void;
+	onViewConfig?: (id: number) => void;
 	onMaintenanceToggle?: (id: number, enabled: boolean) => void;
 }
 export default function Table({
@@ -50,6 +51,7 @@ export default function Table({
 	onTagClick,
 	onSelectionChange,
 	onMetrics,
+	onViewConfig,
 	onMaintenanceToggle,
 }: Props) {
 	const { data: uptimeData = [] } = useUptimeReport();
@@ -115,6 +117,14 @@ export default function Table({
 				},
 				cell: (info: any) => {
 					const value = info.getValue();
+					if (Array.isArray(value.upstreams) && value.upstreams.length) {
+						const list = value.upstreams.map((u: any) => `${u.host}:${u.port}`).join(", ");
+						return (
+							<span className="badge bg-blue-lt" title={list}>
+								{intl.formatMessage({ id: "host.upstreams-count" }, { count: value.upstreams.length })}
+							</span>
+						);
+					}
 					return `${value.forwardScheme}://${value.forwardHost}:${value.forwardPort}`;
 				},
 			}),
@@ -255,6 +265,17 @@ export default function Table({
 										href="#"
 										onClick={(e) => {
 											e.preventDefault();
+											onViewConfig?.(info.row.original.id);
+										}}
+									>
+										<IconCode size={16} />
+										<T id="action.view-config" />
+									</a>
+									<a
+										className="dropdown-item"
+										href="#"
+										onClick={(e) => {
+											e.preventDefault();
 											onDelete?.(info.row.original.id);
 										}}
 									>
@@ -271,9 +292,8 @@ export default function Table({
 				},
 			}),
 		],
-		[columnHelper, onEdit, onDisableToggle, onDelete, onTagClick, onMetrics, onMaintenanceToggle],
+		[columnHelper, onEdit, onDisableToggle, onDelete, onTagClick, onMetrics, onMaintenanceToggle, onViewConfig],
 	);
-
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 

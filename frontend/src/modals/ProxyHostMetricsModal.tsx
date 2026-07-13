@@ -1,12 +1,11 @@
 import EasyModal, { type InnerModalProps } from "ez-modal-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Alert, Modal } from "react-bootstrap";
-import ReactApexChart from "react-apexcharts";
-import type { ApexOptions } from "apexcharts";
 import { useProxyHostMetrics } from "src/hooks";
 import { T } from "src/locale";
 import type { MetricsRange } from "src/api/backend";
 import { Loading } from "src/components";
+import { MetricsCharts } from "src/components/Metrics";
 
 const RANGES: { value: MetricsRange; label: string }[] = [
 	{ value: "1h", label: "1h" },
@@ -14,16 +13,6 @@ const RANGES: { value: MetricsRange; label: string }[] = [
 	{ value: "7d", label: "7d" },
 	{ value: "30d", label: "30d" },
 ];
-
-function formatBytes(bytes: number): string {
-	if (bytes === 0) return "0 B";
-	const units = ["B", "KB", "MB", "GB", "TB"];
-	const i = Math.floor(Math.log(bytes) / Math.log(1024));
-	return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${units[i]}`;
-}
-
-// Buckets arrive as UTC "YYYY-MM-DD HH:MM:SS" strings
-const bucketToEpoch = (bucket: string): number => Date.parse(`${bucket.replace(" ", "T")}Z`);
 
 const showProxyHostMetricsModal = (id: number) => {
 	EasyModal.show(ProxyHostMetricsModal, { id });
@@ -40,66 +29,6 @@ const ProxyHostMetricsModal = EasyModal.create(({ id, visible, remove }: Props) 
 	const buckets = data?.buckets;
 	const totals = data?.totals;
 	const isEmpty = !isLoading && !error && (buckets?.length ?? 0) === 0;
-
-	const requestsSeries = useMemo(
-		() => [{ name: "Requests", data: (buckets ?? []).map((b) => ({ x: bucketToEpoch(b.bucket), y: b.requests })) }],
-		[buckets],
-	);
-	const bandwidthSeries = useMemo(
-		() => [{ name: "Bandwidth", data: (buckets ?? []).map((b) => ({ x: bucketToEpoch(b.bucket), y: b.bytesSent })) }],
-		[buckets],
-	);
-	const statusSeries = useMemo(
-		() =>
-			(["status2xx", "status3xx", "status4xx", "status5xx"] as const).map((key, i) => ({
-				name: ["2xx", "3xx", "4xx", "5xx"][i],
-				data: (buckets ?? []).map((b) => ({ x: bucketToEpoch(b.bucket), y: b[key] })),
-			})),
-		[buckets],
-	);
-
-	const areaChartOptions: ApexOptions = useMemo(
-		() => ({
-			chart: { type: "area", toolbar: { show: false }, animations: { enabled: false } },
-			xaxis: { type: "datetime", labels: { datetimeUTC: false } },
-			stroke: { curve: "smooth", width: 2 },
-			dataLabels: { enabled: false },
-			tooltip: { x: { format: "dd MMM HH:mm" } },
-			grid: { strokeDashArray: 4 },
-		}),
-		[],
-	);
-
-	const requestsOptions: ApexOptions = useMemo(
-		() => ({
-			...areaChartOptions,
-			colors: ["#2fb344"],
-			yaxis: { labels: { formatter: (v) => Math.round(v).toString() } },
-		}),
-		[areaChartOptions],
-	);
-
-	const bandwidthOptions: ApexOptions = useMemo(
-		() => ({
-			...areaChartOptions,
-			colors: ["#4299e1"],
-			yaxis: { labels: { formatter: formatBytes } },
-			tooltip: { x: { format: "dd MMM HH:mm" }, y: { formatter: formatBytes } },
-		}),
-		[areaChartOptions],
-	);
-
-	const statusBarOptions: ApexOptions = useMemo(
-		() => ({
-			chart: { type: "bar", stacked: true, toolbar: { show: false }, animations: { enabled: false } },
-			xaxis: { type: "datetime", labels: { datetimeUTC: false } },
-			dataLabels: { enabled: false },
-			colors: ["#2fb344", "#f59f00", "#e53e3e", "#7c3aed"],
-			grid: { strokeDashArray: 4 },
-			tooltip: { x: { format: "dd MMM HH:mm" } },
-		}),
-		[],
-	);
 
 	return (
 		<Modal show={visible} onHide={remove} size="lg">
@@ -138,58 +67,8 @@ const ProxyHostMetricsModal = EasyModal.create(({ id, visible, remove }: Props) 
 					</div>
 				)}
 
-				{!isLoading && !error && !isEmpty && (
-					<>
-						<div className="mb-4">
-							<h6 className="text-muted mb-2">
-								<T id="metrics.requests" />
-							</h6>
-							<ReactApexChart type="area" height={160} options={requestsOptions} series={requestsSeries} />
-						</div>
-
-						<div className="mb-4">
-							<h6 className="text-muted mb-2">
-								<T id="metrics.bandwidth" />
-							</h6>
-							<ReactApexChart type="area" height={160} options={bandwidthOptions} series={bandwidthSeries} />
-						</div>
-
-						<div className="mb-4">
-							<h6 className="text-muted mb-2">
-								<T id="metrics.status-codes" />
-							</h6>
-							<ReactApexChart type="bar" height={160} options={statusBarOptions} series={statusSeries} />
-						</div>
-
-						{totals && (
-							<div className="row g-3 text-center">
-								<div className="col-6 col-md-3">
-									<div className="fw-semibold">{totals.requests.toLocaleString()}</div>
-									<div className="text-muted small">
-										<T id="metrics.total-requests" />
-									</div>
-								</div>
-								<div className="col-6 col-md-3">
-									<div className="fw-semibold">{formatBytes(totals.bytesSent)}</div>
-									<div className="text-muted small">
-										<T id="metrics.total-bandwidth" />
-									</div>
-								</div>
-								<div className="col-6 col-md-3">
-									<div className="fw-semibold">{(totals.cacheHitRatio * 100).toFixed(1)}%</div>
-									<div className="text-muted small">
-										<T id="metrics.cache-hit" />
-									</div>
-								</div>
-								<div className="col-6 col-md-3">
-									<div className="fw-semibold">{(totals.errorRate * 100).toFixed(1)}%</div>
-									<div className="text-muted small">
-										<T id="metrics.error-rate" />
-									</div>
-								</div>
-							</div>
-						)}
-					</>
+				{!isLoading && !error && !isEmpty && buckets && totals && (
+					<MetricsCharts buckets={buckets} totals={totals} />
 				)}
 			</Modal.Body>
 		</Modal>

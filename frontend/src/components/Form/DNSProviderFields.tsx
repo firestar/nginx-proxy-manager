@@ -4,7 +4,7 @@ import { Field, useFormikContext } from "formik";
 import { useState } from "react";
 import Select, { type ActionMeta } from "react-select";
 import type { DNSProvider } from "src/api/backend";
-import { useDnsProviders } from "src/hooks";
+import { useDnsProviders, useTheme } from "src/hooks";
 import { intl, T } from "src/locale";
 import styles from "./DNSProviderFields.module.css";
 
@@ -19,6 +19,7 @@ interface Props {
 }
 export function DNSProviderFields({ showBoundaryBox = false }: Props) {
 	const { values, setFieldValue } = useFormikContext();
+	const { theme } = useTheme();
 	const { data: dnsProviders, isLoading } = useDnsProviders();
 	const [dnsProviderId, setDnsProviderId] = useState<string | null>(null);
 
@@ -79,15 +80,14 @@ export function DNSProviderFields({ showBoundaryBox = false }: Props) {
 									language="bash"
 									id="dnsProviderCredentials"
 									padding={15}
-									data-color-mode="dark"
+								data-color-mode={theme}
 									minHeight={130}
 									indentWidth={2}
 									style={{
 										fontFamily:
 											"ui-monospace,SFMono-Regular,SF Mono,Consolas,Liberation Mono,Menlo,monospace",
 										borderRadius: "0.3rem",
-										minHeight: "130px",
-										backgroundColor: "var(--tblr-bg-surface-dark)",
+										backgroundColor: theme === "dark" ? "var(--tblr-bg-surface-dark)" : "var(--tblr-bg-surface)",
 									}}
 									value={v.meta.dnsProviderCredentials || ""}
 									{...field}

@@ -30,6 +30,28 @@ router
 	});
 
 router
+	.route("/proxy-hosts/metrics")
+	.options((_, res) => {
+		res.sendStatus(204);
+	})
+	.all(jwtdecode())
+
+	/**
+	 * GET /reports/proxy-hosts/metrics?range=1h|24h|7d|30d
+	 */
+	.get(async (req, res, next) => {
+		try {
+			const data = await internalReport.getMetricsOverview(res.locals.access, {
+				range: req.query.range,
+			});
+			res.status(200).send(data);
+		} catch (err) {
+			debug(logger, `${req.method.toUpperCase()} ${req.path}: ${err}`);
+			next(err);
+		}
+	});
+
+router
 	.route("/proxy-hosts/:id/metrics")
 	.options((_, res) => {
 		res.sendStatus(204);
@@ -94,4 +116,27 @@ router
 		}
 	});
 
+
+router
+	.route("/nodes/:id/metrics")
+	.options((_, res) => {
+		res.sendStatus(204);
+	})
+	.all(jwtdecode())
+
+	/**
+	 * GET /reports/nodes/:id/metrics?range=1h|24h|7d|30d
+	 */
+	.get(async (req, res, next) => {
+		try {
+			const data = await internalReport.getNodeMetrics(res.locals.access, {
+				id: Number.parseInt(req.params.id, 10),
+				range: req.query.range,
+			});
+			res.status(200).send(data);
+		} catch (err) {
+			debug(logger, `${req.method.toUpperCase()} ${req.path}: ${err}`);
+			next(err);
+		}
+	});
 export default router;

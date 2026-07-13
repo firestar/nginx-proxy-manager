@@ -7,6 +7,7 @@ export * from "./Form";
 export * from "./HasPermission";
 export * from "./Loading";
 export * from "./LoadingPage";
+export * from "./Metrics";
 export * from "./LocalePicker";
 export * from "./NavLink";
 export * from "./NodeCell";

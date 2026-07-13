@@ -13,6 +13,7 @@ import {
 	HasPermission,
 	Loading,
 	HeadersField,
+	LoadBalancingField,
 	LocationsFields,
 	NodeField,
 	NginxConfigField,
@@ -25,7 +26,7 @@ import { T } from "src/locale";
 import { MANAGE, PROXY_HOSTS } from "src/modules/Permissions";
 import { validateNumber, validateString } from "src/modules/Validations";
 import { showObjectSuccess } from "src/notifications";
-import { getMaintenancePage, saveMaintenancePage } from "src/api/backend";
+import { getMaintenancePage, saveMaintenancePage, testProxyHostConfig, type TestConfigResult } from "src/api/backend";
 
 const showProxyHostModal = (id: number | "new") => {
 	EasyModal.show(ProxyHostModal, { id });
@@ -34,6 +35,36 @@ const showProxyHostModal = (id: number | "new") => {
 interface Props extends InnerModalProps {
 	id: number | "new";
 }
+const validateProxyHost = (values: any) => {
+	const errors: any = {};
+	if (Array.isArray(values.upstreams)) {
+		const ups = values.upstreams;
+		if (ups.length < 1) {
+			errors.upstreams = "host.upstream.error.min";
+		} else if (!ups.some((u: any) => !u.backup)) {
+			errors.upstreams = "host.upstream.error.non-backup";
+		} else {
+			const seen = new Set<string>();
+			for (const u of ups) {
+				if (!String(u.host || "").trim() || !u.port) {
+					errors.upstreams = "host.upstream.error.host-port";
+					break;
+				}
+				const key = `${u.host}:${u.port}`;
+				if (seen.has(key)) {
+					errors.upstreams = "host.upstream.error.duplicate";
+					break;
+				}
+				seen.add(key);
+				if (u.weight !== undefined && u.weight !== null && Number(u.weight) < 1) {
+					errors.upstreams = "host.upstream.error.weight";
+					break;
+				}
+			}
+		}
+	}
+	return errors;
+};
 const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 	const { data: currentUser, isLoading: userIsLoading, error: userError } = useUser("me");
 	const { data, isLoading, error } = useProxyHost(id);
@@ -42,6 +73,8 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [maintenancePage, setMaintenancePage] = useState("");
 	const [maintenancePageSaving, setMaintenancePageSaving] = useState(false);
+	const [testResult, setTestResult] = useState<TestConfigResult | null>(null);
+	const [testLoading, setTestLoading] = useState(false);
 
 	useEffect(() => {
 		if (typeof id === "number") {
@@ -54,16 +87,53 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 		setIsSubmitting(true);
 		setErrorMsg(null);
 
+		let upstreams: any = null;
+		let lbForward: any = {};
+		if (Array.isArray(values.upstreams)) {
+			upstreams = values.upstreams.map((u: any) => {
+				const entry: any = { host: String(u.host || "").trim(), port: Number(u.port) };
+				if (u.weight !== undefined && u.weight !== null && u.weight !== "") entry.weight = Number(u.weight);
+				if (u.maxFails !== undefined && u.maxFails !== null && u.maxFails !== "")
+					entry.maxFails = Number(u.maxFails);
+				if (u.failTimeout !== undefined && u.failTimeout !== null && u.failTimeout !== "")
+					entry.failTimeout = Number(u.failTimeout);
+				if (u.backup) entry.backup = true;
+				return entry;
+			});
+			// Keep the single-target fields valid: mirror the primary upstream.
+			const primary = upstreams.find((u: any) => !u.backup) || upstreams[0];
+			if (primary) {
+				lbForward = { forwardHost: primary.host, forwardPort: primary.port };
+			}
+		}
 		const { ...payload } = {
 			id: id === "new" ? undefined : id,
 			...values,
 			clientMaxBodySize: values.clientMaxBodySize?.trim() ? values.clientMaxBodySize : null,
-			proxyConnectTimeout: values.proxyConnectTimeout === "" || values.proxyConnectTimeout === null || values.proxyConnectTimeout === undefined ? null : Number(values.proxyConnectTimeout),
-			proxySendTimeout: values.proxySendTimeout === "" || values.proxySendTimeout === null || values.proxySendTimeout === undefined ? null : Number(values.proxySendTimeout),
-			proxyReadTimeout: values.proxyReadTimeout === "" || values.proxyReadTimeout === null || values.proxyReadTimeout === undefined ? null : Number(values.proxyReadTimeout),
+			proxyConnectTimeout:
+				values.proxyConnectTimeout === "" ||
+				values.proxyConnectTimeout === null ||
+				values.proxyConnectTimeout === undefined
+					? null
+					: Number(values.proxyConnectTimeout),
+			proxySendTimeout:
+				values.proxySendTimeout === "" ||
+				values.proxySendTimeout === null ||
+				values.proxySendTimeout === undefined
+					? null
+					: Number(values.proxySendTimeout),
+			proxyReadTimeout:
+				values.proxyReadTimeout === "" ||
+				values.proxyReadTimeout === null ||
+				values.proxyReadTimeout === undefined
+					? null
+					: Number(values.proxyReadTimeout),
 			proxyBuffering: values.proxyBuffering || null,
 			nodeId: values.nodeAll ? null : values.nodeId || null,
 			nodeAll: !!values.nodeAll,
+			upstreams,
+			balanceMethod: upstreams ? values.balanceMethod || null : null,
+			...lbForward,
 		};
 
 		setProxyHost(payload, {
@@ -93,6 +163,8 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 						{
 							// Details tab
 							domainNames: data?.domainNames || [],
+							upstreams: data?.upstreams ?? null,
+							balanceMethod: data?.balanceMethod ?? null,
 							forwardScheme: data?.forwardScheme || "http",
 							forwardHost: data?.forwardHost || "",
 							forwardPort: data?.forwardPort || undefined,
@@ -128,6 +200,7 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 							expectedStatus: data?.expectedStatus || "200-399",
 						} as any
 					}
+					validate={validateProxyHost}
 					onSubmit={onSubmit}
 				>
 					{({ values }: any) => (
@@ -222,7 +295,7 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 										<div className="tab-content">
 											<div className="tab-pane active show" id="tab-details" role="tabpanel">
 												<DomainNamesField isWildcardPermitted dnsProviderWildcardSupported />
-								<NodeField />
+												<NodeField />
 												<div className="row">
 													<div className="col-md-3">
 														<Field name="forwardScheme">
@@ -255,63 +328,80 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 															)}
 														</Field>
 													</div>
-													<div className="col-md-6">
-														<Field name="forwardHost" validate={validateString(1, 255)}>
-															{({ field, form }: any) => (
-																<div className="mb-3">
-																	<label className="form-label" htmlFor="forwardHost">
-																		<T id="proxy-host.forward-host" />
-																	</label>
-																	<input
-																		id="forwardHost"
-																		type="text"
-																		className={`form-control ${form.errors.forwardHost && form.touched.forwardHost ? "is-invalid" : ""}`}
-																		required
-																		placeholder="example.com"
-																		{...field}
-																	/>
-																	{form.errors.forwardHost ? (
-																		<div className="invalid-feedback">
-																			{form.errors.forwardHost &&
-																			form.touched.forwardHost
-																				? form.errors.forwardHost
-																				: null}
+													{!values.upstreams && (
+														<>
+															<div className="col-md-6">
+																<Field
+																	name="forwardHost"
+																	validate={validateString(1, 255)}
+																>
+																	{({ field, form }: any) => (
+																		<div className="mb-3">
+																			<label
+																				className="form-label"
+																				htmlFor="forwardHost"
+																			>
+																				<T id="proxy-host.forward-host" />
+																			</label>
+																			<input
+																				id="forwardHost"
+																				type="text"
+																				className={`form-control ${form.errors.forwardHost && form.touched.forwardHost ? "is-invalid" : ""}`}
+																				required
+																				placeholder="example.com"
+																				{...field}
+																			/>
+																			{form.errors.forwardHost ? (
+																				<div className="invalid-feedback">
+																					{form.errors.forwardHost &&
+																					form.touched.forwardHost
+																						? form.errors.forwardHost
+																						: null}
+																				</div>
+																			) : null}
 																		</div>
-																	) : null}
-																</div>
-															)}
-														</Field>
-													</div>
-													<div className="col-md-3">
-														<Field name="forwardPort" validate={validateNumber(1, 65535)}>
-															{({ field, form }: any) => (
-																<div className="mb-3">
-																	<label className="form-label" htmlFor="forwardPort">
-																		<T id="host.forward-port" />
-																	</label>
-																	<input
-																		id="forwardPort"
-																		type="number"
-																		min={1}
-																		max={65535}
-																		className={`form-control ${form.errors.forwardPort && form.touched.forwardPort ? "is-invalid" : ""}`}
-																		required
-																		placeholder="eg: 8081"
-																		{...field}
-																	/>
-																	{form.errors.forwardPort ? (
-																		<div className="invalid-feedback">
-																			{form.errors.forwardPort &&
-																			form.touched.forwardPort
-																				? form.errors.forwardPort
-																				: null}
+																	)}
+																</Field>
+															</div>
+															<div className="col-md-3">
+																<Field
+																	name="forwardPort"
+																	validate={validateNumber(1, 65535)}
+																>
+																	{({ field, form }: any) => (
+																		<div className="mb-3">
+																			<label
+																				className="form-label"
+																				htmlFor="forwardPort"
+																			>
+																				<T id="host.forward-port" />
+																			</label>
+																			<input
+																				id="forwardPort"
+																				type="number"
+																				min={1}
+																				max={65535}
+																				className={`form-control ${form.errors.forwardPort && form.touched.forwardPort ? "is-invalid" : ""}`}
+																				required
+																				placeholder="eg: 8081"
+																				{...field}
+																			/>
+																			{form.errors.forwardPort ? (
+																				<div className="invalid-feedback">
+																					{form.errors.forwardPort &&
+																					form.touched.forwardPort
+																						? form.errors.forwardPort
+																						: null}
+																				</div>
+																			) : null}
 																		</div>
-																	) : null}
-																</div>
-															)}
-														</Field>
-													</div>
+																	)}
+																</Field>
+															</div>
+														</>
+													)}
 												</div>
+												<LoadBalancingField />
 												<AccessField />
 												<TagsField />
 												<div className="my-3">
@@ -402,7 +492,9 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 													<div className="divide-y">
 														<div>
 															<label className="row" htmlFor="checkEnabled">
-																<span className="col">Enable uptime checks</span>
+																<span className="col">
+																	<T id="proxy-host.uptime-checks" />
+																</span>
 																<span className="col-auto">
 																	<Field name="checkEnabled" type="checkbox">
 																		{({ field }: any) => (
@@ -410,7 +502,9 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 																				<input
 																					{...field}
 																					id="checkEnabled"
-																					className={cn("form-check-input", { "bg-lime": field.checked })}
+																					className={cn("form-check-input", {
+																						"bg-lime": field.checked,
+																					})}
 																					type="checkbox"
 																				/>
 																			</label>
@@ -423,7 +517,9 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 													<Field name="checkPath">
 														{({ field }: any) => (
 															<div className="mb-3 mt-3">
-																<label className="form-label" htmlFor="checkPath">Check path</label>
+																<label className="form-label" htmlFor="checkPath">
+																	<T id="proxy-host.uptime-check-path" />
+																</label>
 																<input
 																	id="checkPath"
 																	type="text"
@@ -439,7 +535,12 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 															<Field name="checkIntervalS">
 																{({ field }: any) => (
 																	<div className="mb-3">
-																		<label className="form-label" htmlFor="checkIntervalS">Check interval (seconds)</label>
+																		<label
+																			className="form-label"
+																			htmlFor="checkIntervalS"
+																		>
+																			<T id="proxy-host.uptime-check-interval" />
+																		</label>
 																		<input
 																			id="checkIntervalS"
 																			type="number"
@@ -456,7 +557,12 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 															<Field name="expectedStatus">
 																{({ field }: any) => (
 																	<div className="mb-3">
-																		<label className="form-label" htmlFor="expectedStatus">Expected status</label>
+																		<label
+																			className="form-label"
+																			htmlFor="expectedStatus"
+																		>
+																			<T id="proxy-host.uptime-expected-status" />
+																		</label>
 																		<input
 																			id="expectedStatus"
 																			type="text"
@@ -464,7 +570,9 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 																			placeholder="200-399"
 																			{...field}
 																		/>
-																		<small className="form-hint">e.g. 200-399 or 200,301,404</small>
+																		<small className="form-hint">
+																			<T id="proxy-host.uptime-expected-status-hint" />
+																		</small>
 																	</div>
 																)}
 															</Field>
@@ -482,13 +590,21 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 											</div>
 											<div className="tab-pane" id="tab-advanced" role="tabpanel">
 												<CommonNginxOptionsFields />
-												<NginxConfigField guardedDirectives={[
-													...values.clientMaxBodySize ? ["client_max_body_size"] : [],
-													...values.proxyConnectTimeout != null ? ["proxy_connect_timeout"] : [],
-													...values.proxySendTimeout != null ? ["proxy_send_timeout"] : [],
-													...values.proxyReadTimeout != null ? ["proxy_read_timeout"] : [],
-													...values.proxyBuffering ? ["proxy_buffering"] : [],
-												]} />
+												<NginxConfigField
+													guardedDirectives={[
+														...(values.clientMaxBodySize ? ["client_max_body_size"] : []),
+														...(values.proxyConnectTimeout != null
+															? ["proxy_connect_timeout"]
+															: []),
+														...(values.proxySendTimeout != null
+															? ["proxy_send_timeout"]
+															: []),
+														...(values.proxyReadTimeout != null
+															? ["proxy_read_timeout"]
+															: []),
+														...(values.proxyBuffering ? ["proxy_buffering"] : []),
+													]}
+												/>
 												{id !== "new" && (
 													<div className="mt-4">
 														<label className="form-label fw-semibold">
@@ -508,7 +624,10 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 															onClick={async () => {
 																setMaintenancePageSaving(true);
 																try {
-																	await saveMaintenancePage(id as number, maintenancePage);
+																	await saveMaintenancePage(
+																		id as number,
+																		maintenancePage,
+																	);
 																	showObjectSuccess("proxy-host", "saved");
 																} finally {
 																	setMaintenancePageSaving(false);
@@ -519,6 +638,62 @@ const ProxyHostModal = EasyModal.create(({ id, visible, remove }: Props) => {
 														</Button>
 													</div>
 												)}
+												<div className="mt-3">
+													<Button
+														size="sm"
+														isLoading={testLoading}
+														onClick={async () => {
+															setTestLoading(true);
+															setTestResult(null);
+															try {
+																const payload: Record<string, unknown> = { ...values };
+																if (typeof id === "number") {
+																	payload.id = id;
+																}
+																const result = await testProxyHostConfig(payload);
+																setTestResult(result);
+															} catch (e: any) {
+																setTestResult({
+																	ok: false,
+																	errors: e?.message || "Unknown error",
+																});
+															} finally {
+																setTestLoading(false);
+															}
+														}}
+													>
+														<T id="action.test-configuration" />
+													</Button>
+													{testResult && (
+														<Alert
+															variant={testResult.ok ? "success" : "danger"}
+															className="mt-2 mb-0 py-2"
+															onClose={() => setTestResult(null)}
+															dismissible
+														>
+															{testResult.ok ? (
+																<T
+																	id={
+																		testResult.tested_locally
+																			? "config-test.success-remote"
+																			: "config-test.success"
+																	}
+																/>
+															) : (
+																<>
+																	<strong>
+																		<T id="config-test.error-title" />
+																	</strong>
+																	{testResult.errors && (
+																		<pre className="mt-1 mb-0 small">
+																			{testResult.errors}
+																		</pre>
+																	)}
+																</>
+															)}
+														</Alert>
+													)}
+												</div>
 											</div>
 										</div>
 									</div>

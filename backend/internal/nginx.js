@@ -10,6 +10,14 @@ import events, { HOST_OFFLINE, HOST_ONLINE } from "../lib/events.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Mutex: ensures configure() local-apply and testHostConfig() never interleave.
+let applyChain = Promise.resolve();
+const withApplyLock = (fn) => {
+	const r = applyChain.then(fn, fn);
+	applyChain = r.catch(() => {});
+	return r;
+};
+
 const internalNginx = {
 	/**
 	 * Filter nginx test output to fatal lines only ([emerg]/[crit]).
@@ -43,6 +51,7 @@ const internalNginx = {
 			const { default: internalNode } = await import("./node.js");
 			return internalNode.applyRemoteHost(model, host_type, host);
 		}
+		return withApplyLock(async () => {
 		// 1. Baseline: global nginx must be OK before we touch anything.
 		await internalNginx.test();
 
@@ -112,6 +121,7 @@ const internalNginx = {
 		await internalNginx.reload();
 
 		return combined_meta;
+		});
 	},
 
 	/**
@@ -469,6 +479,56 @@ const internalNginx = {
 
 		return true;
 	},
+
+	/**
+	 * Alias for renderConfig — renders host config string without writing to disk.
+	 *
+	 * @param   {String}  host_type
+	 * @param   {Object}  host
+	 * @returns {Promise<String>}
+	 */
+	renderHostConfig: (host_type, host) => internalNginx.renderConfig(host_type, host),
+
+	/**
+	 * Dry-run: write candidate config, run nginx -t, ALWAYS restore original state.
+	 * Never reloads nginx. Runs under applyChain mutex so it never interleaves with configure().
+	 *
+	 * @param   {String}  host_type
+	 * @param   {Object}  host        Must have host.id set (use 0 for a new unsaved host).
+	 * @returns {Promise<{ok: boolean, errors?: string}>}
+	 */
+	testHostConfig: (host_type, host) =>
+		withApplyLock(async () => {
+			const filename = internalNginx.getConfigName(
+				internalNginx.getFileFriendlyHostType(host_type),
+				host.id ?? 0,
+			);
+			const bakFile = `${filename}.bak`;
+			const existed = fs.existsSync(filename);
+
+			if (existed) {
+				fs.copyFileSync(filename, bakFile);
+			}
+
+			let ok = false;
+			let errors;
+			try {
+				await internalNginx.generateConfig(host_type, host);
+				await internalNginx.test();
+				ok = true;
+			} catch (err) {
+				errors = internalNginx.filterFatalLines(err.message);
+			} finally {
+				// Always restore — leave no trace of the dry-run on disk.
+				if (existed) {
+					try { fs.renameSync(bakFile, filename); } catch (_) { /* best-effort */ }
+				} else {
+					internalNginx.deleteFile(filename);
+				}
+			}
+
+			return ok ? { ok: true } : { ok: false, errors };
+		}),
 };
 
 export default internalNginx;

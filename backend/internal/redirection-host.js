@@ -506,7 +506,34 @@ const internalRedirectionHost = {
 		return query.first().then((row) => {
 			return Number.parseInt(row.count, 10);
 		});
+
 	},
+	getConfig: async (access, data) => {
+		await access.can("redirection_hosts:config", data.id);
+		const row = await internalRedirectionHost.get(access, {
+			id: data.id,
+			expand: ["certificate"],
+		});
+		const config = await internalNginx.renderHostConfig("redirection_host", row);
+		return { config };
+	},
+
+	testConfig: async (access, payload) => {
+		const id = payload.id || null;
+		await access.can("redirection_hosts:config", id);
+		let base = {};
+		if (id) {
+			base = await internalRedirectionHost.get(access, { id, expand: ["certificate"] });
+		}
+		const candidate = _.assign({}, base, payload);
+		if (!candidate.id) {
+			candidate.id = 0;
+		}
+		const pinnedRemote = !!(candidate.node_id || candidate.node_all);
+		const result = await internalNginx.testHostConfig("redirection_host", candidate);
+		return pinnedRemote ? { ...result, tested_locally: true } : result;
+	},
+
 };
 
 export default internalRedirectionHost;

@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { IconDotsVertical, IconEdit, IconRefresh, IconTrash } from "@tabler/icons-react";
 import { createColumnHelper, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { useMemo } from "react";
@@ -56,7 +57,11 @@ export default function Table({ data, isFetching, onEdit, onRegenerateToken, onD
 				header: intl.formatMessage({ id: "column.name" }),
 				cell: (info: any) => {
 					const value = info.getValue();
-					return <ValueWithDateFormatter value={value.name} createdOn={value.createdOn} />;
+					return (
+						<Link to={`/nodes/${value.id}`} className="text-reset">
+							<ValueWithDateFormatter value={value.name} createdOn={value.createdOn} />
+						</Link>
+					);
 				},
 			}),
 			columnHelper.accessor((row: any) => row, {

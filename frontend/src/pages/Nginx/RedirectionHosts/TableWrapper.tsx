@@ -7,7 +7,7 @@ import { deleteRedirectionHost, type Tag, toggleRedirectionHost } from "src/api/
 import { Button, HasPermission, LoadingPage, TagFilter } from "src/components";
 import { useRedirectionHosts } from "src/hooks";
 import { T } from "src/locale";
-import { showBulkTagModal, showDeleteConfirmModal, showHelpModal, showRedirectionHostModal } from "src/modals";
+import { showBulkTagModal, showDeleteConfirmModal, showHelpModal, showRedirectionHostModal, showViewConfigModal } from "src/modals";
 import { MANAGE, REDIRECTION_HOSTS } from "src/modules/Permissions";
 import { showObjectSuccess } from "src/notifications";
 import Table from "./Table";
@@ -144,6 +144,7 @@ export default function TableWrapper() {
 					onNew={() => showRedirectionHostModal("new")}
 					onTagClick={handleTagClick}
 					onSelectionChange={setSelectedIds}
+					onViewConfig={(id: number) => showViewConfigModal("redirection_host", id)}
 				/>
 			</div>
 		</div>

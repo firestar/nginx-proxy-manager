@@ -39,4 +39,40 @@ export function registerNodeTools(server: McpServer): void {
 		},
 		(args) => npmRequest("GET", `${BASE}/${Number(args.id)}`),
 	);
+
+	registerTool(
+		server,
+		"npm_sync_node",
+		{
+			title: "Force sync node",
+			description:
+				"Trigger an immediate config push to a remote node. The panel schedules the push and returns; " +
+				"the node will ack asynchronously. Use npm_get_node_apply_log to check the result.",
+			readOnly: false,
+			inputSchema: {
+				id: z.number().int().positive().describe("Node ID"),
+			},
+		},
+		(args) => npmRequest("POST", `${BASE}/${Number(args.id)}/sync`),
+	);
+
+	registerTool(
+		server,
+		"npm_get_node_apply_log",
+		{
+			title: "Get node apply log",
+			description:
+				"Get the most recent config apply log entries for a node — version, ok/error, timestamp. " +
+				"Entries are recorded each time the node's agent acks a pushed config.",
+			readOnly: true,
+			inputSchema: {
+				id: z.number().int().positive().describe("Node ID"),
+				limit: z.number().int().min(1).max(200).optional().describe("Max entries (default 50)"),
+			},
+		},
+		(args) =>
+			npmRequest("GET", `${BASE}/${Number(args.id)}/apply-log`, {
+				query: args.limit ? { limit: String(args.limit) } : undefined,
+			}),
+	);
 }

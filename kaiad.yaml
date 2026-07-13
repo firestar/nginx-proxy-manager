@@ -1,15 +1,29 @@
 version: 1
 
-# Build the full NPM image via the self-contained Dockerfile (frontend is
-# compiled inside the build; docker/Dockerfile expects a pre-built dist).
-dockerfile:
-  path: docker/Dockerfile.kaiad
-  context: .
+services:
+  npm:
+    # Build the full NPM panel image via the self-contained Dockerfile
+    # (frontend is compiled inside the build; docker/Dockerfile expects a
+    # pre-built dist).
+    dockerfile:
+      path: docker/Dockerfile.kaiad
+      context: .
+    ports:
+      - port: 80
+        name: http
+      - port: 81
+        name: admin
+      - port: 443
+        name: https
 
-ports:
-  - port: 80
-    name: http
-  - port: 81
-    name: admin
-  - port: 443
-    name: https
+  npm-agent:
+    # Remote node agent: openresty/nginx + Node daemon that dials out to the
+    # panel over WebSocket (PANEL_URL/AGENT_TOKEN env), so no admin port.
+    dockerfile:
+      path: docker/Dockerfile.agent
+      context: .
+    ports:
+      - port: 80
+        name: http
+      - port: 443
+        name: https

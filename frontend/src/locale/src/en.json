@@ -101,6 +101,9 @@
 	"action.add-location": {
 		"defaultMessage": "Add Location"
 	},
+	"action.add-upstream": {
+		"defaultMessage": "Add Upstream"
+	},
 	"action.allow": {
 		"defaultMessage": "Allow"
 	},
@@ -190,6 +193,18 @@
 	},
 	"auto": {
 		"defaultMessage": "Auto"
+	},
+	"backup.download": {
+		"defaultMessage": "Download backup"
+	},
+	"backup.restore": {
+		"defaultMessage": "Restore / import"
+	},
+	"backup.run-history": {
+		"defaultMessage": "Run history"
+	},
+	"backup.scheduled": {
+		"defaultMessage": "Scheduled backups (S3 / MinIO)"
 	},
 	"badge.maintenance": {
 		"defaultMessage": "Maintenance"
@@ -327,6 +342,9 @@
 		"defaultMessage": "Authorizations"
 	},
 	"column.color": {
+	"column.type": {
+		"defaultMessage": "Type"
+	},
 		"defaultMessage": "Color"
 	},
 	"column.created-on": {
@@ -440,6 +458,33 @@
 	"dashboard.recent-activity": {
 		"defaultMessage": "Recent Activity"
 	},
+	"dashboard.traffic": {
+		"defaultMessage": "Traffic"
+	},
+	"dashboard.traffic.breakdown-host": {
+		"defaultMessage": "Host"
+	},
+	"dashboard.traffic.breakdown-requests": {
+		"defaultMessage": "Requests"
+	},
+	"dashboard.traffic.breakdown-bandwidth": {
+		"defaultMessage": "Bandwidth"
+	},
+	"dashboard.traffic.breakdown-error": {
+		"defaultMessage": "Error %"
+	},
+	"dashboard.traffic.breakdown-cache": {
+		"defaultMessage": "Cache Hit %"
+	},
+	"dashboard.traffic.show-all": {
+		"defaultMessage": "Show all"
+	},
+	"dashboard.traffic.show-less": {
+		"defaultMessage": "Show less"
+	},
+	"dashboard.traffic.no-data": {
+		"defaultMessage": "No traffic recorded for this period."
+	},
 	"dead-host": {
 		"defaultMessage": "404 Host"
 	},
@@ -545,6 +590,12 @@
 	"host.advanced.buffering-default": {
 		"defaultMessage": "Default"
 	},
+	"ha.acme-relay-url": {
+		"defaultMessage": "ACME Relay URL"
+	},
+	"ha.heading": {
+		"defaultMessage": "High Availability"
+	},
 	"host.advanced.buffering-off": {
 		"defaultMessage": "Off"
 	},
@@ -601,6 +652,48 @@
 	},
 	"host.headers.value": {
 		"defaultMessage": "Header Value"
+	},
+	"host.load-balancing": {
+		"defaultMessage": "Load Balancing"
+	},
+	"host.balance-method": {
+		"defaultMessage": "Method"
+	},
+	"host.balance-method.round-robin": {
+		"defaultMessage": "Round robin"
+	},
+	"host.balance-method.least-conn": {
+		"defaultMessage": "Least connections"
+	},
+	"host.balance-method.ip-hash": {
+		"defaultMessage": "IP hash"
+	},
+	"host.upstream.host": {
+		"defaultMessage": "Host"
+	},
+	"host.upstream.weight": {
+		"defaultMessage": "Weight"
+	},
+	"host.upstream.backup": {
+		"defaultMessage": "Backup"
+	},
+	"host.upstreams-count": {
+		"defaultMessage": "{count, plural, one {# upstream} other {# upstreams}}"
+	},
+	"host.upstream.error.min": {
+		"defaultMessage": "At least one upstream is required"
+	},
+	"host.upstream.error.non-backup": {
+		"defaultMessage": "At least one non-backup upstream is required"
+	},
+	"host.upstream.error.host-port": {
+		"defaultMessage": "Each upstream needs a host and port"
+	},
+	"host.upstream.error.duplicate": {
+		"defaultMessage": "Upstream host:port pairs must be unique"
+	},
+	"host.upstream.error.weight": {
+		"defaultMessage": "Weight must be at least 1"
 	},
 	"hosts": {
 		"defaultMessage": "Hosts"
@@ -761,6 +854,42 @@
 	"node.token-warning": {
 		"defaultMessage": "This enrollment token is shown only once. Use it to start the agent; it is exchanged for a per-node key on first connect."
 	},
+	"node.force-sync": {
+		"defaultMessage": "Force Re-sync"
+	},
+	"node.force-sync.success": {
+		"defaultMessage": "Sync scheduled"
+	},
+	"node.apply-history": {
+		"defaultMessage": "Apply History"
+	},
+	"node.apply-log.version": {
+		"defaultMessage": "Version"
+	},
+	"node.apply-log.result": {
+		"defaultMessage": "Result"
+	},
+	"node.apply-log.ok": {
+		"defaultMessage": "OK"
+	},
+	"node.apply-log.failed": {
+		"defaultMessage": "Failed"
+	},
+	"node.apply-log.empty": {
+		"defaultMessage": "No apply history yet"
+	},
+	"node.traffic": {
+		"defaultMessage": "Traffic"
+	},
+	"node.hosts": {
+		"defaultMessage": "Assigned Hosts"
+	},
+	"node.hosts.empty": {
+		"defaultMessage": "No hosts assigned to this node"
+	},
+	"node.detail": {
+		"defaultMessage": "Node Detail"
+	},
 	"nodes": {
 		"defaultMessage": "Nodes"
 	},
@@ -778,6 +907,9 @@
 	},
 	"notification.object-deleted": {
 		"defaultMessage": "{object} has been deleted"
+	},
+	"notification.object-synced": {
+		"defaultMessage": "{object} sync scheduled"
 	},
 	"notification.object-disabled": {
 		"defaultMessage": "{object} has been disabled"
@@ -799,6 +931,24 @@
 	},
 	"notification.success": {
 		"defaultMessage": "Success"
+	},
+	"notifications.add-channel": {
+		"defaultMessage": "Add Channel"
+	},
+	"notifications.channel": {
+		"defaultMessage": "notification channel"
+	},
+	"notifications.channels": {
+		"defaultMessage": "Notification Channels"
+	},
+	"notifications.no-channels": {
+		"defaultMessage": "No channels configured. Add one to start receiving alerts."
+	},
+	"notifications.no-deliveries": {
+		"defaultMessage": "No delivery logs yet."
+	},
+	"notifications.recent-deliveries": {
+		"defaultMessage": "Recent Deliveries"
 	},
 	"object.actions-title": {
 		"defaultMessage": "{object} #{id}"
@@ -883,6 +1033,21 @@
 	},
 	"proxy-host.forward-host": {
 		"defaultMessage": "Forward Hostname / IP"
+	},
+	"proxy-host.uptime-check-interval": {
+		"defaultMessage": "Check interval (seconds)"
+	},
+	"proxy-host.uptime-check-path": {
+		"defaultMessage": "Check path"
+	},
+	"proxy-host.uptime-checks": {
+		"defaultMessage": "Enable uptime checks"
+	},
+	"proxy-host.uptime-expected-status": {
+		"defaultMessage": "Expected status"
+	},
+	"proxy-host.uptime-expected-status-hint": {
+		"defaultMessage": "e.g. 200-399 or 200,301,404"
 	},
 	"proxy-hosts": {
 		"defaultMessage": "Proxy Hosts"
@@ -1084,5 +1249,35 @@
 	},
 	"users": {
 		"defaultMessage": "Users"
+	},
+	"action.show-expiring": {
+		"defaultMessage": "Show expiring"
+	},
+	"certificates.expiring": {
+		"defaultMessage": "Expiring certificates"
+	},
+	"certificates.expiring.count": {
+		"defaultMessage": "{count} {count, plural, one {Expiring certificate} other {Expiring certificates}}"
+	},
+	"certificates.expiring-banner": {
+		"defaultMessage": "{count} {count, plural, one {certificate expires} other {certificates expire}} within 30 days"
+	},
+	"filter.provider": {
+		"defaultMessage": "Provider"
+	},
+	"filter.provider.all": {
+		"defaultMessage": "All providers"
+	},
+	"filter.expiry": {
+		"defaultMessage": "Expiry"
+	},
+	"filter.expiry.all": {
+		"defaultMessage": "All"
+	},
+	"filter.expiring-30d": {
+		"defaultMessage": "Expiring ≤ 30 days"
+	},
+	"filter.expired": {
+		"defaultMessage": "Expired"
 	}
 }

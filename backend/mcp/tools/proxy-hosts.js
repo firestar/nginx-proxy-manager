@@ -28,6 +28,14 @@ const headerItem = z.object({
 	value: z.string().optional().describe("Header value (required when action is \"set\")"),
 });
 
+const upstreamItem = z.object({
+	host: z.string().min(1).describe("Upstream host or IP, e.g. '10.0.0.2'"),
+	port: z.number().int().min(1).max(65535).describe("Upstream port"),
+	weight: z.number().int().min(1).optional().describe("Relative weight for round-robin/least_conn distribution (default 1)"),
+	max_fails: z.number().int().min(0).optional().describe("Passive health: failed attempts within fail_timeout before the server is marked unavailable"),
+	fail_timeout: z.number().int().min(1).optional().describe("Passive health: seconds a server stays unavailable after max_fails is reached"),
+	backup: z.boolean().optional().describe("Only receives traffic when all non-backup servers are unavailable"),
+});
 // Optional fields shared by create and update.
 const optionalFields = {
 	certificate_id: z
@@ -56,6 +64,19 @@ const optionalFields = {
 		.array(headerItem)
 		.optional()
 		.describe("Custom request/response header manipulations"),
+	upstreams: z
+		.array(upstreamItem)
+		.min(1)
+		.nullable()
+		.optional()
+		.describe(
+			"Load-balancing upstream pool (Phase A: static nginx load balancing with passive health via max_fails/fail_timeout). Requires >=1 entry and >=1 non-backup entry; host:port pairs must be unique. null or omitted = single-target mode using forward_host/forward_port. Active probe-driven failover is a planned follow-up, not part of Phase A.",
+		),
+	balance_method: z
+		.enum(["least_conn", "ip_hash"])
+		.nullable()
+		.optional()
+		.describe("Load-balancing method for the upstream pool; null or omitted = nginx default round-robin"),
 };
 
 export function registerProxyHostTools(server, ctx) {
@@ -87,6 +108,17 @@ export function registerProxyHostTools(server, ctx) {
 		},
 		(args) => ctx.request("GET", `${BASE}/${Number(args.id)}`),
 	);
+
+	registerTool(
+		"npm_get_proxy_host_config",
+		{
+			title: "Get proxy host nginx config",
+			description: "Get the rendered nginx config text for a saved proxy host without applying it.",
+			inputSchema: { id: z.number().int().describe("Proxy host id") },
+		},
+		(args) => ctx.request("GET", `${BASE}/${Number(args.id)}/config`),
+	);
+
 
 	registerTool(
 		"npm_create_proxy_host",
@@ -153,7 +185,6 @@ export function registerProxyHostTools(server, ctx) {
 			inputSchema: { id: z.number().int().describe("Proxy host id") },
 		},
 		(args) => ctx.request("POST", `${BASE}/${Number(args.id)}/disable`),
-		(args) => ctx.request("POST", `${BASE}/${Number(args.id)}/disable`),
 	);
 
 	registerTool(
@@ -191,5 +222,60 @@ export function registerProxyHostTools(server, ctx) {
 			},
 		},
 		(args) => ctx.request("PUT", `${BASE}/${Number(args.id)}/maintenance-page`, { body: { html: args.html } }),
+	);
+
+	registerTool(
+		"npm_get_proxy_host_metrics",
+		{
+			title: "Get proxy host metrics",
+			description: "Get traffic metrics (requests, bandwidth, status codes) for a single proxy host over a time range.",
+			readOnly: true,
+			inputSchema: {
+				id: z.number().int().describe("Proxy host id"),
+				range: z.enum(["1h", "24h", "7d", "30d"]).default("24h").describe("Time range"),
+			},
+		},
+		(args) => ctx.request("GET", `/reports/proxy-hosts/${Number(args.id)}/metrics`, { query: { range: args.range } }),
+	);
+
+	registerTool(
+		"npm_get_metrics_overview",
+		{
+			title: "Get metrics overview",
+			description: "Get aggregate traffic metrics across all visible proxy hosts plus a per-host breakdown, over a time range.",
+			readOnly: true,
+			inputSchema: {
+				range: z.enum(["1h", "24h", "7d", "30d"]).default("24h").describe("Time range"),
+			},
+		},
+		(args) => ctx.request("GET", "/reports/proxy-hosts/metrics", { query: { range: args.range } }),
+	);
+
+	registerTool(
+		"npm_get_proxy_host_config",
+		{
+			title: "Get proxy host nginx config",
+			description: "Get the rendered nginx configuration for a proxy host.",
+			readOnly: true,
+			inputSchema: { id: z.number().int().describe("Proxy host id") },
+		},
+		(args) => ctx.request("GET", `${BASE}/${Number(args.id)}/config`),
+	);
+
+	registerTool(
+		"npm_test_proxy_host_config",
+		{
+			title: "Test proxy host nginx config",
+			description: "Dry-run nginx -t for a proxy host config. Pass an existing id to test the saved config, or include host fields to pre-validate before saving. Returns { ok, errors? }.",
+			inputSchema: {
+				id: z.number().int().optional().describe("Existing proxy host id to base the test on; omit for a new host"),
+				domain_names: domainNames.optional(),
+				forward_scheme: forwardScheme.optional(),
+				forward_host: forwardHost.optional(),
+				forward_port: forwardPort.optional(),
+				advanced_config: z.string().optional(),
+			},
+		},
+		(args) => ctx.request("POST", `${BASE}/test-config`, { body: args }),
 	);
 }

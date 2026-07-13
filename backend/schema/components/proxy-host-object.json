@@ -199,6 +199,64 @@
 			"description": "Enable or disable buffering of responses from the proxied server",
 			"example": "off"
 		},
+		"upstreams": {
+			"type": ["array", "null"],
+			"description": "Load-balancing upstream pool (Phase A: static nginx load balancing with passive health). null = single-target mode using forward_host/forward_port.",
+			"minItems": 1,
+			"items": {
+				"type": "object",
+				"required": ["host", "port"],
+				"additionalProperties": false,
+				"properties": {
+					"host": {
+						"type": "string",
+						"minLength": 1,
+						"maxLength": 255,
+						"example": "10.0.0.2"
+					},
+					"port": {
+						"type": "integer",
+						"minimum": 1,
+						"maximum": 65535,
+						"example": 8080
+					},
+					"weight": {
+						"type": "integer",
+						"minimum": 1,
+						"description": "Relative weight for round-robin/least_conn distribution",
+						"example": 1
+					},
+					"max_fails": {
+						"type": "integer",
+						"minimum": 0,
+						"description": "Passive health: failed attempts within fail_timeout before the server is marked unavailable",
+						"example": 3
+					},
+					"fail_timeout": {
+						"type": "integer",
+						"minimum": 1,
+						"description": "Passive health: seconds a server stays marked unavailable after max_fails is reached",
+						"example": 10
+					},
+					"backup": {
+						"type": "boolean",
+						"description": "Only receives traffic when all non-backup servers are unavailable",
+						"example": false
+					}
+				}
+			},
+			"default": null,
+			"example": [
+				{"host": "10.0.0.2", "port": 8080, "weight": 2},
+				{"host": "10.0.0.3", "port": 8080, "backup": true}
+			]
+		},
+		"balance_method": {
+			"type": ["string", "null"],
+			"enum": ["least_conn", "ip_hash", null],
+			"description": "Load-balancing method for the upstream pool; null = nginx default round-robin",
+			"example": "least_conn"
+		},
 		"tags": {
 			"type": "array",
 			"description": "Tags attached to this object",

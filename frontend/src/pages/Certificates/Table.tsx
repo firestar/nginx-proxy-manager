@@ -1,6 +1,12 @@
 import { IconDotsVertical, IconDownload, IconRefresh, IconTrash } from "@tabler/icons-react";
-import { createColumnHelper, getCoreRowModel, useReactTable } from "@tanstack/react-table";
-import { useMemo } from "react";
+import {
+	createColumnHelper,
+	getCoreRowModel,
+	getSortedRowModel,
+	type SortingState,
+	useReactTable,
+} from "@tanstack/react-table";
+import { useMemo, useState } from "react";
 import type { Certificate } from "src/api/backend";
 import {
 	CertificateInUseFormatter,
@@ -29,6 +35,7 @@ export default function Table({ data, isFetching, onDelete, onRenew, onDownload,
 		() => [
 			columnHelper.accessor((row: any) => row.owner, {
 				id: "owner",
+				enableSorting: false,
 				cell: (info: any) => {
 					const value = info.getValue();
 					return <GravatarFormatter url={value ? value.avatar : ""} name={value ? value.name : ""} />;
@@ -40,6 +47,11 @@ export default function Table({ data, isFetching, onDelete, onRenew, onDownload,
 			columnHelper.accessor((row: any) => row, {
 				id: "domainNames",
 				header: intl.formatMessage({ id: "column.name" }),
+				sortingFn: (a, b) => {
+					const aVal = a.original.niceName || a.original.domainNames?.[0] || "";
+					const bVal = b.original.niceName || b.original.domainNames?.[0] || "";
+					return aVal.localeCompare(bVal);
+				},
 				cell: (info: any) => {
 					const value = info.getValue();
 					return (
@@ -55,6 +67,14 @@ export default function Table({ data, isFetching, onDelete, onRenew, onDownload,
 			columnHelper.accessor((row: any) => row, {
 				id: "provider",
 				header: intl.formatMessage({ id: "column.provider" }),
+				sortingFn: (a, b) => {
+					const label = (r: any) => {
+						if (r.provider === "letsencrypt")
+							return r.meta?.dnsChallenge ? "letsencrypt-dns" : "letsencrypt-http";
+						return r.provider === "other" ? "custom" : r.provider || "";
+					};
+					return label(a.original).localeCompare(label(b.original));
+				},
 				cell: (info: any) => {
 					const r = info.getValue();
 					if (r.provider === "letsencrypt") {
@@ -76,12 +96,16 @@ export default function Table({ data, isFetching, onDelete, onRenew, onDownload,
 			columnHelper.accessor((row: any) => row.expiresOn, {
 				id: "expiresOn",
 				header: intl.formatMessage({ id: "column.expires" }),
+				sortingFn: (a, b) => {
+					return (a.original.expiresOn || "").localeCompare(b.original.expiresOn || "");
+				},
 				cell: (info: any) => {
 					return <DateFormatter value={info.getValue()} highlightPast />;
 				},
 			}),
 			columnHelper.accessor((row: any) => row, {
 				id: "proxyHosts",
+				enableSorting: false,
 				header: intl.formatMessage({ id: "column.status" }),
 				cell: (info: any) => {
 					const r = info.getValue();
@@ -164,10 +188,15 @@ export default function Table({ data, isFetching, onDelete, onRenew, onDownload,
 		[columnHelper, onDelete, onRenew, onDownload],
 	);
 
+	const [sorting, setSorting] = useState<SortingState>([{ id: "expiresOn", desc: false }]);
+
 	const tableInstance = useReactTable<Certificate>({
 		columns,
 		data,
+		state: { sorting },
+		onSortingChange: setSorting,
 		getCoreRowModel: getCoreRowModel(),
+		getSortedRowModel: getSortedRowModel(),
 		rowCount: data.length,
 		meta: {
 			isFetching,

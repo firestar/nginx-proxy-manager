@@ -83,6 +83,7 @@ export default defineConfig({
 					{ text: "Setup Instructions", link: "/setup/" },
 					{ text: "Backup & Restore", link: "/backup/" },
 					{ text: "Advanced Configuration", link: "/advanced-config/" },
+					{ text: "Load Balancing", link: "/load-balancing/" },
 					{ text: "Multi-Node", link: "/multi-node/" },
 					{ text: "MCP Server", link: "/mcp/" },
 					{ text: "Upgrading", link: "/upgrading/" },

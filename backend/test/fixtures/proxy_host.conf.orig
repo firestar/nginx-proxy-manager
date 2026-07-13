@@ -1,0 +1,79 @@
+{% include "_header_comment.conf" %}
+
+{% if enabled %}
+
+{% include "_hsts_map.conf" %}
+
+server {
+  set $forward_scheme {{ forward_scheme }};
+  set $server         "{{ forward_host }}";
+  set $port           {{ forward_port }};
+
+{% include "_listen.conf" %}
+{% include "_certificates.conf" %}
+{% include "_acme_relay.conf" %}
+{% include "_assets.conf" %}
+{% include "_exploits.conf" %}
+{% include "_hsts.conf" %}
+{% include "_forced_ssl.conf" %}
+
+{% if allow_websocket_upgrade == 1 or allow_websocket_upgrade == true %}
+proxy_set_header Upgrade $http_upgrade;
+proxy_set_header Connection $http_connection;
+proxy_http_version 1.1;
+{% endif %}
+
+  access_log /data/logs/proxy-host-{{ id }}_access.log proxy;
+  error_log /data/logs/proxy-host-{{ id }}_error.log warn;
+
+{% if client_max_body_size %}  client_max_body_size {{ client_max_body_size }};{% endif %}
+{% if proxy_connect_timeout %}  proxy_connect_timeout {{ proxy_connect_timeout }}s;{% endif %}
+{% if proxy_send_timeout %}  proxy_send_timeout {{ proxy_send_timeout }}s;{% endif %}
+{% if proxy_read_timeout %}  proxy_read_timeout {{ proxy_read_timeout }}s;{% endif %}
+{% if proxy_buffering %}  proxy_buffering {{ proxy_buffering }};{% endif %}
+
+{{ advanced_config }}
+
+{% if maintenance_mode == 1 or maintenance_mode == true %}
+
+  error_page 503 @maintenance_{{ id }};
+  location @maintenance_{{ id }} {
+    add_header Retry-After 300 always;
+    default_type text/html;
+    root /data/nginx/maintenance;
+    try_files /{{ id }}.html /_default.html =503;
+  }
+
+  location / {
+    return 503;
+  }
+
+{% else %}
+
+{{ locations }}
+
+{% if use_default_location %}
+
+  location / {
+
+{% include "_access.conf" %}
+{% include "_hsts.conf" %}
+
+    {% if allow_websocket_upgrade == 1 or allow_websocket_upgrade == true %}
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $http_connection;
+    proxy_http_version 1.1;
+    {% endif %}
+
+{% include "_headers.conf" %}
+    # Proxy!
+    include conf.d/include/proxy.conf;
+  }
+{% endif %}
+
+{% endif %}
+
+  # Custom
+  include /data/nginx/custom/server_proxy[.]conf;
+}
+{% endif %}

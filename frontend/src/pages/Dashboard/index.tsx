@@ -5,12 +5,33 @@ import {
 	IconDisc,
 	IconPlus,
 	IconShield,
+	IconShieldExclamation,
 	IconTag,
 } from "@tabler/icons-react";
 import type { ComponentType } from "react";
 import { useNavigate } from "react-router-dom";
 import { EventFormatter, GravatarFormatter, HasPermission } from "src/components";
 import { useAuditLogs, useCertificates, useHostReport, useTags, useUser } from "src/hooks";
+import { T } from "src/locale";
+import {
+	showDeadHostModal,
+	showProxyHostModal,
+	showRedirectionHostModal,
+	showStreamModal,
+	showTagModal,
+} from "src/modals";
+import {
+	ADMIN,
+	CERTIFICATES,
+	DEAD_HOSTS,
+	MANAGE,
+	PROXY_HOSTS,
+	REDIRECTION_HOSTS,
+	type Section,
+	STREAMS,
+	VIEW,
+} from "src/modules/Permissions";
+import { TrafficCard } from "./TrafficCard";
 import { T } from "src/locale";
 import {
 	showDeadHostModal,
@@ -48,6 +69,12 @@ const Dashboard = () => {
 	const isAdmin = currentUser?.roles.includes("admin");
 	const { data: auditLogs } = useAuditLogs(["user"], { enabled: !!isAdmin });
 	const navigate = useNavigate();
+
+	const nowIso = new Date().toISOString();
+	const in30dIso = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+	const expiringCount = (certificates || []).filter(
+		(c: any) => c.expiresOn && c.expiresOn > nowIso && c.expiresOn <= in30dIso,
+	).length;
 
 	const stats: StatCard[] = [
 		{
@@ -91,6 +118,14 @@ const Dashboard = () => {
 			section: CERTIFICATES,
 		},
 		{
+			labelId: "certificates.expiring.count",
+			count: expiringCount,
+			to: "/certificates?filter=expiring",
+			icon: IconShieldExclamation,
+			color: expiringCount > 0 ? "yellow" : "secondary",
+			section: CERTIFICATES,
+		},
+		{
 			labelId: "tags.count",
 			count: tags?.length,
 			to: "/tags",
@@ -120,12 +155,7 @@ const Dashboard = () => {
 				{stats.map((stat) => {
 					const Icon = stat.icon;
 					return (
-						<HasPermission
-							key={stat.to + stat.labelId}
-							section={stat.section}
-							permission={VIEW}
-							hideError
-						>
+						<HasPermission key={stat.to + stat.labelId} section={stat.section} permission={VIEW} hideError>
 							<div className="col-sm-6 col-lg-4 col-xl-2">
 								<a
 									href={stat.to}
@@ -155,6 +185,9 @@ const Dashboard = () => {
 					);
 				})}
 			</div>
+			<HasPermission section={PROXY_HOSTS} permission={VIEW} hideError>
+				<TrafficCard />
+			</HasPermission>
 			<div className="row row-cards">
 				<div className="col-lg-5">
 					<div className="card">
@@ -172,7 +205,11 @@ const Dashboard = () => {
 										permission={MANAGE}
 										hideError
 									>
-										<button type="button" className="btn btn-outline-primary btn-sm" onClick={action.onClick}>
+										<button
+											type="button"
+											className="btn btn-outline-primary btn-sm"
+											onClick={action.onClick}
+										>
 											<IconPlus size={16} className="me-1" />
 											<T id="object.add" tData={{ object: action.labelObject }} />
 										</button>

@@ -167,6 +167,25 @@ docker build -f docker/Dockerfile.agent -t npm-agent .
 For local development, `docker/docker-compose.dev.yml` contains an `agent`
 service wired to the dev panel (`AGENT_TOKEN` is read from the environment).
 
+
+### Agent image from the Kaiad registry
+
+The `npm-agent` Kaiad pipeline builds the agent image and publishes it to
+the Kaiad built-in OCI registry as `<panel-host>/npm-agent:<sha>`. Before a
+remote host can `docker pull` that image it must authenticate:
+
+```bash
+docker login <panel-host>
+```
+
+Use a registry.pull-scoped API credential or an enrollment token as the
+password (see [Kaiad registry docs](https://kaiad.dev/reference/registry.html)).
+
+The panel's `AGENT_IMAGE` environment variable controls the image reference
+shown in the enrollment `docker run` command. Set it to
+`<panel-host>/npm-agent:<sha>` to point enrolling nodes at the Kaiad-built
+image instead of the default `npm-agent:latest`.
+
 ## Limitations
 
 - HTTP-01 certificates on remote nodes require the ACME Relay URL to be set; a

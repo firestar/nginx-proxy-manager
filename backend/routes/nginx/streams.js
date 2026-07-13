@@ -71,6 +71,38 @@ router
 	});
 
 /**
+ * Test stream config (dry-run; never reloads nginx)
+ *
+ * /api/nginx/streams/test-config
+ */
+router
+	.route("/test-config")
+	.options((_, res) => {
+		res.sendStatus(204);
+	})
+	.all(jwtdecode())
+
+	/**
+	 * POST /api/nginx/streams/test-config
+	 */
+	.post(async (req, res, next) => {
+		try {
+			const putSchema = getValidationSchema("/nginx/streams/{streamID}", "put");
+			const testSchema = {
+				...putSchema,
+				properties: { ...putSchema.properties, id: { type: "integer", minimum: 1 } },
+				minProperties: 1,
+			};
+			const payload = await apiValidator(testSchema, req.body);
+			const result = await internalStream.testConfig(res.locals.access, payload);
+			res.status(200).send(result);
+		} catch (err) {
+			debug(logger, `${req.method.toUpperCase()} ${req.path}: ${err}`);
+			next(err);
+		}
+	});
+
+/**
  * Specific stream
  *
  * /api/nginx/streams/123
@@ -198,6 +230,34 @@ router
 		try {
 			const result = await internalStream.disable(res.locals.access, {
 				id: Number.parseInt(req.params.host_id, 10),
+			});
+			res.status(200).send(result);
+		} catch (err) {
+			debug(logger, `${req.method.toUpperCase()} ${req.path}: ${err}`);
+			next(err);
+		}
+	});
+
+
+/**
+ * Rendered nginx config for a saved stream
+ *
+ * /api/nginx/streams/123/config
+ */
+router
+	.route("/:stream_id/config")
+	.options((_, res) => {
+		res.sendStatus(204);
+	})
+	.all(jwtdecode())
+
+	/**
+	 * GET /api/nginx/streams/123/config
+	 */
+	.get(async (req, res, next) => {
+		try {
+			const result = await internalStream.getConfig(res.locals.access, {
+				id: Number.parseInt(req.params.stream_id, 10),
 			});
 			res.status(200).send(result);
 		} catch (err) {

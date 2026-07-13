@@ -418,6 +418,33 @@ const internalDeadHost = {
 		const row = await query.first();
 		return Number.parseInt(row.count, 10);
 	},
+
+	getConfig: async (access, data) => {
+		await access.can("dead_hosts:config", data.id);
+		const row = await internalDeadHost.get(access, {
+			id: data.id,
+			expand: ["certificate"],
+		});
+		const config = await internalNginx.renderHostConfig("dead_host", row);
+		return { config };
+	},
+
+	testConfig: async (access, payload) => {
+		const id = payload.id || null;
+		await access.can("dead_hosts:config", id);
+		let base = {};
+		if (id) {
+			base = await internalDeadHost.get(access, { id, expand: ["certificate"] });
+		}
+		const candidate = _.assign({}, base, payload);
+		if (!candidate.id) {
+			candidate.id = 0;
+		}
+		const pinnedRemote = !!(candidate.node_id || candidate.node_all);
+		const result = await internalNginx.testHostConfig("dead_host", candidate);
+		return pinnedRemote ? { ...result, tested_locally: true } : result;
+	},
+
 };
 
 export default internalDeadHost;

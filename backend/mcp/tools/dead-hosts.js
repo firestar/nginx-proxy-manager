@@ -100,4 +100,29 @@ export function registerDeadHostTools(server, ctx) {
 		},
 		(args) => ctx.request("POST", `${BASE}/${Number(args.id)}/disable`),
 	);
+
+	registerTool(
+		"npm_get_404_host_config",
+		{
+			title: "Get 404 host nginx config",
+			description: "Get the rendered nginx configuration for a 404 host.",
+			readOnly: true,
+			inputSchema: { id: z.number().int().describe("404 host id") },
+		},
+		(args) => ctx.request("GET", `${BASE}/${Number(args.id)}/config`),
+	);
+
+	registerTool(
+		"npm_test_404_host_config",
+		{
+			title: "Test 404 host nginx config",
+			description: "Dry-run nginx -t for a 404 host config. Pass an existing id to test the saved config, or include host fields to pre-validate before saving. Returns { ok, errors? }.",
+			inputSchema: {
+				id: z.number().int().optional().describe("Existing 404 host id to base the test on; omit for a new host"),
+				domain_names: domainNames.optional(),
+				advanced_config: z.string().optional(),
+			},
+		},
+		(args) => ctx.request("POST", `${BASE}/test-config`, { body: args }),
+	);
 }

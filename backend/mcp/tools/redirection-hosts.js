@@ -127,4 +127,32 @@ export function registerRedirectionHostTools(server, ctx) {
 		},
 		(args) => ctx.request("POST", `${BASE}/${Number(args.id)}/disable`),
 	);
+
+	registerTool(
+		"npm_get_redirection_host_config",
+		{
+			title: "Get redirection host nginx config",
+			description: "Get the rendered nginx configuration for a redirection host.",
+			readOnly: true,
+			inputSchema: { id: z.number().int().describe("Redirection host id") },
+		},
+		(args) => ctx.request("GET", `${BASE}/${Number(args.id)}/config`),
+	);
+
+	registerTool(
+		"npm_test_redirection_host_config",
+		{
+			title: "Test redirection host nginx config",
+			description: "Dry-run nginx -t for a redirection host config. Pass an existing id to test the saved config, or include host fields to pre-validate before saving. Returns { ok, errors? }.",
+			inputSchema: {
+				id: z.number().int().optional().describe("Existing redirection host id to base the test on; omit for a new host"),
+				domain_names: domainNames.optional(),
+				forward_scheme: forwardScheme.optional(),
+				forward_domain_name: forwardDomainName.optional(),
+				forward_http_code: forwardHttpCode.optional(),
+				advanced_config: z.string().optional(),
+			},
+		},
+		(args) => ctx.request("POST", `${BASE}/test-config`, { body: args }),
+	);
 }

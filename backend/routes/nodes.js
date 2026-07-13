@@ -87,4 +87,42 @@ router
 		}
 	});
 
+
+/**
+ * POST /api/nodes/:id/sync — force an immediate push to the node
+ */
+router
+	.route("/:id/sync")
+	.options((_, res) => res.sendStatus(204))
+	.all(jwtdecode())
+	.post(async (req, res, next) => {
+		try {
+			await internalNode.sync(res.locals.access, Number(req.params.id));
+			res.status(202).send({ ok: true });
+		} catch (err) {
+			debug(logger, `${req.method} ${req.path}: ${err}`);
+			next(err);
+		}
+	});
+
+/**
+ * GET /api/nodes/:id/apply-log?limit=
+ */
+router
+	.route("/:id/apply-log")
+	.options((_, res) => res.sendStatus(204))
+	.all(jwtdecode())
+	.get(async (req, res, next) => {
+		try {
+			const rows = await internalNode.getApplyLog(
+				res.locals.access,
+				Number(req.params.id),
+				req.query.limit,
+			);
+			res.status(200).send(rows);
+		} catch (err) {
+			debug(logger, `${req.method} ${req.path}: ${err}`);
+			next(err);
+		}
+	});
 export default router;

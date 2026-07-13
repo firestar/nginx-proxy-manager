@@ -5,6 +5,7 @@ export * from "./DNSProviderFields";
 export * from "./DomainNamesField";
 export * from "./HeadersField";
 export * from "./LocationsFields";
+export * from "./LoadBalancingField";
 export * from "./CommonNginxOptionsFields";
 export * from "./NodeField";
 export * from "./NginxConfigField";

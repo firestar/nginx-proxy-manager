@@ -1,4 +1,4 @@
-import { IconDotsVertical, IconEdit, IconPower, IconTrash } from "@tabler/icons-react";
+import { IconCode, IconDotsVertical, IconEdit, IconPower, IconTrash } from "@tabler/icons-react";
 import {
 	createColumnHelper,
 	getCoreRowModel,
@@ -33,6 +33,7 @@ interface Props {
 	onDisableToggle?: (id: number, enabled: boolean) => void;
 	onNew?: () => void;
 	onTagClick?: (tag: Tag) => void;
+	onViewConfig?: (id: number) => void;
 	onSelectionChange?: (ids: number[]) => void;
 }
 export default function Table({
@@ -44,6 +45,7 @@ export default function Table({
 	onNew,
 	isFiltered,
 	onTagClick,
+	onViewConfig,
 	onSelectionChange,
 }: Props) {
 	const columnHelper = createColumnHelper<RedirectionHost>();
@@ -209,6 +211,17 @@ export default function Table({
 										href="#"
 										onClick={(e) => {
 											e.preventDefault();
+											onViewConfig?.(info.row.original.id);
+										}}
+									>
+										<IconCode size={16} />
+										<T id="action.view-config" />
+									</a>
+									<a
+										className="dropdown-item"
+										href="#"
+										onClick={(e) => {
+											e.preventDefault();
 											onDelete?.(info.row.original.id);
 										}}
 									>
@@ -225,7 +238,7 @@ export default function Table({
 				},
 			}),
 		],
-		[columnHelper, onEdit, onDisableToggle, onDelete, onTagClick],
+		[columnHelper, onEdit, onDisableToggle, onDelete, onTagClick, onViewConfig],
 	);
 
 	const [sorting, setSorting] = useState<SortingState>([]);

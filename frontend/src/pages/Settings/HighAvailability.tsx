@@ -3,6 +3,7 @@ import { type ReactNode, useState } from "react";
 import { Alert } from "react-bootstrap";
 import { Button, Loading } from "src/components";
 import { useSetSetting, useSetting } from "src/hooks";
+import { T } from "src/locale";
 import { showObjectSuccess } from "src/notifications";
 
 /**
@@ -49,19 +50,18 @@ export default function HighAvailability() {
 					)}
 
 					<div className="card-body">
-						<h4 className="mb-3">High Availability</h4>
+						<h4 className="mb-3"><T id="ha.heading" /></h4>
 
 						<Field name="relayUrl">
 							{({ field }: any) => (
 								<div className="mb-3">
 									<label className="form-label" htmlFor="acmeRelayUrl">
-										ACME Relay URL
+										<T id="ha.acme-relay-url" />
 									</label>
 									<input
 										id="acmeRelayUrl"
 										type="text"
 										className="form-control"
-										placeholder="http://panel.example.com"
 										{...field}
 									/>
 									<small className="form-hint">
@@ -76,9 +76,9 @@ export default function HighAvailability() {
 					</div>
 
 					<div className="card-footer text-end">
-						<Button type="submit" actionType="primary" className="bg-lime" isLoading={isSubmitting} disabled={isSubmitting}>
-							Save
-						</Button>
+					<Button type="submit" actionType="primary" className="bg-lime" isLoading={isSubmitting} disabled={isSubmitting}>
+						<T id="save" />
+					</Button>
 					</div>
 				</Form>
 			)}

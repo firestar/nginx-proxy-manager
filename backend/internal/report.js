@@ -230,6 +230,119 @@ const internalReport = {
 			lastMetricBucket: lastMap.get(nodeId) || null,
 		}));
 	},
+
+
+	/**
+	 * Aggregate metrics overview: time-series across all visible proxy hosts + per-host totals.
+	 *
+	 * @param  {Access} access
+	 * @param  {Object} data
+	 * @param  {string} [data.range] 1h|24h|7d|30d (default 24h)
+	 * @return {Promise}
+	 */
+	getMetricsOverview: async (access, data) => {
+		const range = (data && data.range) || "24h";
+		const cfg = RANGE_CONFIG[range];
+		if (!cfg) {
+			throw new errs.ValidationError(`Invalid range: ${range}. Must be one of ${Object.keys(RANGE_CONFIG).join(", ")}`);
+		}
+
+		const access_data = await access.can("proxy_hosts:list");
+		const userId = access.token.getUserId(1);
+		const visibility = typeof access_data === "object" ? access_data.permission_visibility : "all";
+
+		const knex = db();
+
+		let hostQuery = knex("proxy_host").where({ is_deleted: 0 }).select("id", "domain_names");
+		if (visibility === "user") {
+			hostQuery = hostQuery.where("owner_user_id", userId);
+		} else if (visibility === "tags") {
+			const tagRows = await knex("user_tag").select("tag_id").where("user_id", userId);
+			const tagIds = tagRows.map((r) => r.tag_id);
+			const ids = tagIds.length ? tagIds : [0];
+			hostQuery = hostQuery.whereExists(
+				knex.select(knex.raw("1")).from("proxy_host_tag")
+					.where("proxy_host_tag.proxy_host_id", knex.ref("proxy_host.id"))
+					.whereIn("proxy_host_tag.tag_id", ids),
+			);
+		}
+
+		const hosts = await hostQuery;
+		if (!hosts.length) {
+			return { range, series: [], totals: bucketTotals([]), hosts: [] };
+		}
+
+		const hostIds = hosts.map((h) => h.id);
+		const cutoff = new Date(Date.now() - cfg.windowMs).toISOString().replace("T", " ").slice(0, 19);
+
+		const rows = await knex("proxy_host_metric")
+			.whereIn("proxy_host_id", hostIds)
+			.where({ resolution: cfg.resolution })
+			.where("bucket", ">=", cutoff)
+			.orderBy("bucket", "asc");
+
+		const grouped = groupBuckets(rows, cfg.stepMs);
+		const series = [...grouped.keys()].sort((a, b) => a - b).map((k) => grouped.get(k));
+
+		const hostTotals = hosts.map((h) => {
+			const hostRows = rows.filter((r) => r.proxy_host_id === h.id);
+			const hg = groupBuckets(hostRows, cfg.stepMs);
+			const hb = [...hg.keys()].map((k) => hg.get(k));
+			const totals = bucketTotals(hb);
+			const domainNames = typeof h.domain_names === "string" ? JSON.parse(h.domain_names) : h.domain_names;
+			return {
+				id: h.id,
+				domain_names: domainNames,
+				requests: totals.requests,
+				bytesSent: totals.bytesSent,
+				errorRate: totals.errorRate,
+				cacheHitRate: totals.cacheHitRatio,
+			};
+		}).sort((a, b) => b.requests - a.requests);
+
+		return {
+			range,
+			series,
+			totals: bucketTotals(series),
+			hosts: hostTotals,
+		};
+	},
+
+	/**
+	 * Per-node aggregated timeseries from proxy_host_metric.
+	 *
+	 * @param  {Access} access
+	 * @param  {Object} data
+	 * @param  {number} data.id      node id
+	 * @param  {string} [data.range] 1h|24h|7d|30d (default 24h)
+	 * @return {Promise}
+	 */
+	getNodeMetrics: async (access, data) => {
+		const range = data.range || "24h";
+		const cfg = RANGE_CONFIG[range];
+		if (!cfg) {
+			throw new errs.ValidationError(`Invalid range: ${range}. Must be one of ${Object.keys(RANGE_CONFIG).join(", ")}`);
+		}
+
+		await access.can("nodes:get");
+
+		const cutoff = new Date(Date.now() - cfg.windowMs).toISOString().replace("T", " ").slice(0, 19);
+
+		const knex = db();
+		const rows = await knex("proxy_host_metric")
+			.where({ node_id: data.id, resolution: cfg.resolution })
+			.where("bucket", ">=", cutoff)
+			.orderBy("bucket", "asc");
+
+		const grouped = groupBuckets(rows, cfg.stepMs);
+		const buckets = [...grouped.keys()].sort((a, b) => a - b).map((k) => grouped.get(k));
+
+		return {
+			range,
+			buckets,
+			totals: bucketTotals(buckets),
+		};
+	},
 };
 
 export default internalReport;

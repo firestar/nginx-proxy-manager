@@ -12,6 +12,7 @@ import proxyHostModel from "../models/proxy_host.js";
 import redirectionHostModel from "../models/redirection_host.js";
 import streamModel from "../models/stream.js";
 import settingModel from "../models/setting.js";
+import nodeApplyLogModel from "../models/node_apply_log.js";
 import internalAuditLog from "./audit-log.js";
 import internalNginx from "./nginx.js";
 
@@ -52,7 +53,7 @@ const sanitize = (row) => {
 };
 
 const dockerCommand = (token) =>
-	`docker run -d --name npm-agent --restart unless-stopped -p 80:80 -p 443:443 -v npm-agent-data:/data -e PANEL_URL="wss://YOUR_PANEL_HOST" -e AGENT_TOKEN="${token}" npm-agent:latest`;
+	`docker run -d --name npm-agent --restart unless-stopped -p 80:80 -p 443:443 -v npm-agent-data:/data -e PANEL_URL="wss://YOUR_PANEL_HOST" -e AGENT_TOKEN="${token}" ${process.env.AGENT_IMAGE || "npm-agent:latest"}`;
 
 // Debounce timers per node so bursts of host changes produce one snapshot push
 const pushTimers = new Map();
@@ -690,6 +691,28 @@ const internalNode = {
 			events.emit(NODE_CONFIG_FAILED, { id: node.id, name: node.name, version: msg.version, error });
 		}
 
+		// Record apply result in node_apply_log; prune to 100 most recent per node.
+		try {
+			await nodeApplyLogModel.query().insert({
+				node_id: node.id,
+				version: msg.version,
+				ok: msg.ok ? 1 : 0,
+				error: msg.ok ? null : String(msg.error || "unknown error").slice(0, 2000),
+				created_on: at,
+			});
+			const top100 = (
+				await nodeApplyLogModel
+					.query()
+					.where("node_id", node.id)
+					.orderBy("id", "desc")
+					.limit(100)
+					.select("id")
+			).map((r) => r.id);
+			await nodeApplyLogModel.query().where("node_id", node.id).whereNotIn("id", top100).delete();
+		} catch (logErr) {
+			logger.error(`Node ${node.id} apply log write failed: ${logErr.message}`);
+		}
+
 		// Wake any HTTP-01 issuance waiting on this node's apply.
 		resolveAckWaiters(node.id, msg.version, msg.ok, msg.error);
 	},
@@ -768,6 +791,45 @@ const internalNode = {
 		}
 	},
 
+
+	/**
+	 * @param   {Access}  access
+	 * @param   {Number}  id
+	 * @returns {Promise}
+	 */
+	sync: async (access, id) => {
+		await access.can("nodes:manage");
+		const row = await getRawNode(id);
+		if (!row) {
+			throw new errs.ItemNotFoundError(id);
+		}
+		await internalAuditLog.add(access, {
+			action: "updated",
+			object_type: "node",
+			object_id: id,
+			meta: { name: row.name, synced: true },
+		});
+		internalNode.schedulePush(id);
+	},
+
+	/**
+	 * @param   {Access}  access
+	 * @param   {Number}  id
+	 * @param   {Number}  [limit]
+	 * @returns {Promise}
+	 */
+	getApplyLog: async (access, id, limit = 50) => {
+		await access.can("nodes:get");
+		const row = await getRawNode(id);
+		if (!row) {
+			throw new errs.ItemNotFoundError(id);
+		}
+		return nodeApplyLogModel
+			.query()
+			.where("node_id", id)
+			.orderBy("id", "desc")
+			.limit(Math.min(Number(limit) || 50, 200));
+	},
 	/**
 	 * Offline detection backstop for zombie connections: heartbeats update
 	 * last_seen; when 3 heartbeats are missed the node goes offline.

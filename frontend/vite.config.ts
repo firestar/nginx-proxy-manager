@@ -7,12 +7,14 @@ import { execFile } from "node:child_process";
 const runLocaleScripts = () => {
 	execFile("yarn", ["locale-compile"], (error, stdout, _stderr) => {
 		if (error) {
-			throw error;
+			console.warn("locale-compile failed:", error.message);
+			return;
 		}
 		console.log(stdout);
 		execFile("yarn", ["locale-sort"], (error, stdout, _stderr) => {
 			if (error) {
-				throw error;
+				console.warn("locale-sort failed:", error.message);
+				return;
 			}
 			console.log(stdout);
 		});

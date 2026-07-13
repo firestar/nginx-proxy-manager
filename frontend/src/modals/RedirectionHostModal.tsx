@@ -19,6 +19,7 @@ import { useRedirectionHost, useSetRedirectionHost } from "src/hooks";
 import { T } from "src/locale";
 import { validateString } from "src/modules/Validations";
 import { showObjectSuccess } from "src/notifications";
+import { testRedirectionHostConfig, type TestConfigResult } from "src/api/backend";
 
 const showRedirectionHostModal = (id: number | "new") => {
 	EasyModal.show(RedirectionHostModal, { id });
@@ -33,6 +34,8 @@ const RedirectionHostModal = EasyModal.create(({ id, visible, remove }: Props) =
 	const [errorMsg, setErrorMsg] = useState<ReactNode | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
+	const [testResult, setTestResult] = useState<TestConfigResult | null>(null);
+	const [testLoading, setTestLoading] = useState(false);
 	const onSubmit = async (values: any, { setSubmitting }: any) => {
 		if (isSubmitting) return;
 		setIsSubmitting(true);
@@ -93,7 +96,7 @@ const RedirectionHostModal = EasyModal.create(({ id, visible, remove }: Props) =
 					}
 					onSubmit={onSubmit}
 				>
-					{() => (
+					{({ values }: any) => (
 						<Form>
 							<Modal.Header closeButton>
 								<Modal.Title>
@@ -315,6 +318,35 @@ const RedirectionHostModal = EasyModal.create(({ id, visible, remove }: Props) =
 											</div>
 											<div className="tab-pane" id="tab-advanced" role="tabpanel">
 												<NginxConfigField />
+												<div className="mt-3">
+													<Button
+														size="sm"
+														isLoading={testLoading}
+														onClick={async () => {
+															setTestLoading(true);
+															setTestResult(null);
+															try {
+																const payload: Record<string, unknown> = { ...values };
+																if (typeof id === "number") { payload.id = id; }
+																const result = await testRedirectionHostConfig(payload);
+																setTestResult(result);
+															} catch (e: any) {
+																setTestResult({ ok: false, errors: e?.message || "Unknown error" });
+															} finally {
+																setTestLoading(false);
+															}
+														}}>
+														<T id="action.test-configuration" />
+													</Button>
+													{testResult && (
+														<Alert variant={testResult.ok ? "success" : "danger"} className="mt-2 mb-0 py-2" onClose={() => setTestResult(null)} dismissible>
+															{testResult.ok
+																? <T id={testResult.tested_locally ? "config-test.success-remote" : "config-test.success"} />
+																: (<><strong><T id="config-test.error-title" /></strong>{testResult.errors && <pre className="mt-1 mb-0 small">{testResult.errors}</pre>}</>)
+															}
+														</Alert>
+													)}
+												</div>
 											</div>
 										</div>
 									</div>

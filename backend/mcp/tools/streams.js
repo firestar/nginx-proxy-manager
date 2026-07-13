@@ -108,4 +108,30 @@ export function registerStreamTools(server, ctx) {
 		},
 		(args) => ctx.request("POST", `${BASE}/${Number(args.id)}/disable`),
 	);
+
+	registerTool(
+		"npm_get_stream_config",
+		{
+			title: "Get stream nginx config",
+			description: "Get the rendered nginx configuration for a TCP/UDP stream.",
+			readOnly: true,
+			inputSchema: { id: z.number().int().describe("Stream id") },
+		},
+		(args) => ctx.request("GET", `${BASE}/${Number(args.id)}/config`),
+	);
+
+	registerTool(
+		"npm_test_stream_config",
+		{
+			title: "Test stream nginx config",
+			description: "Dry-run nginx -t for a stream config. Pass an existing id to test the saved config, or include stream fields to pre-validate before saving. Returns { ok, errors? }.",
+			inputSchema: {
+				id: z.number().int().optional().describe("Existing stream id to base the test on; omit for a new stream"),
+				incoming_port: incomingPort.optional(),
+				forwarding_host: forwardingHost.optional(),
+				forwarding_port: forwardingPort.optional(),
+			},
+		},
+		(args) => ctx.request("POST", `${BASE}/test-config`, { body: args }),
+	);
 }

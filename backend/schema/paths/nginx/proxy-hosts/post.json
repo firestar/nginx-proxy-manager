@@ -104,6 +104,12 @@
 						},
 						"headers": {
 							"$ref": "../../../components/proxy-host-object.json#/properties/headers"
+						},
+						"upstreams": {
+							"$ref": "../../../components/proxy-host-object.json#/properties/upstreams"
+						},
+						"balance_method": {
+							"$ref": "../../../components/proxy-host-object.json#/properties/balance_method"
 						}
 					}
 				},

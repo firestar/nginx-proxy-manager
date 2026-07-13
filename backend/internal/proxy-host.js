@@ -3,6 +3,7 @@ import _ from "lodash";
 import errs from "../lib/error.js";
 import nginxLint from "./nginx-lint.js";
 import proxyHeader from "./proxy-header.js";
+import proxyUpstream from "./proxy-upstream.js";
 import { castJsonIfNeed } from "../lib/helpers.js";
 import utils from "../lib/utils.js";
 import proxyHostModel from "../models/proxy_host.js";
@@ -80,6 +81,7 @@ const internalProxyHost = {
 				// Reject if advanced_config duplicates a template-emitted directive.
 				nginxLint.check(thisData.advanced_config, thisData);
 				proxyHeader.validate(thisData.headers);
+				proxyUpstream.validate(thisData.upstreams, thisData.balance_method);
 				return proxyHostModel.query().insertAndFetch(thisData).then(utils.omitRow(omissions()));
 			})
 			.then((row) => {
@@ -230,6 +232,10 @@ const internalProxyHost = {
 				);
 
 				proxyHeader.validate(typeof thisData.headers !== "undefined" ? thisData.headers : row.headers);
+				proxyUpstream.validate(
+					typeof thisData.upstreams !== "undefined" ? thisData.upstreams : row.upstreams,
+					typeof thisData.balance_method !== "undefined" ? thisData.balance_method : row.balance_method,
+				);
 				return proxyHostModel
 					.query()
 					.where({ id: thisData.id })
@@ -615,6 +621,52 @@ const internalProxyHost = {
 			.then(() => {
 				return true;
 			});
+	},
+
+
+	/**
+	 * Render the saved nginx config for a proxy host without applying it.
+	 *
+	 * @param   {Access}  access
+	 * @param   {Object}  data
+	 * @param   {Number}  data.id
+	 * @returns {Promise<{config: string}>}
+	 */
+	getConfig: async (access, data) => {
+		await access.can("proxy_hosts:config", data.id);
+		const row = await internalProxyHost.get(access, {
+			id: data.id,
+			expand: ["certificate", "access_list.[clients,items]"],
+		});
+		const config = await internalNginx.renderHostConfig("proxy_host", row);
+		return { config };
+	},
+
+	/**
+	 * Dry-run nginx -t against a candidate proxy host payload.
+	 * Always restores original state; never reloads nginx.
+	 *
+	 * @param   {Access}  access
+	 * @param   {Object}  payload  PUT-schema body plus optional id
+	 * @returns {Promise<{ok: boolean, errors?: string, tested_locally?: boolean}>}
+	 */
+	testConfig: async (access, payload) => {
+		const id = payload.id || null;
+		await access.can("proxy_hosts:config", id);
+		let base = {};
+		if (id) {
+			base = await internalProxyHost.get(access, {
+				id,
+				expand: ["certificate", "access_list.[clients,items]"],
+			});
+		}
+		const candidate = _.assign({}, base, payload);
+		if (!candidate.id) {
+			candidate.id = 0;
+		}
+		const pinnedRemote = !!(candidate.node_id || candidate.node_all);
+		const result = await internalNginx.testHostConfig("proxy_host", candidate);
+		return pinnedRemote ? { ...result, tested_locally: true } : result;
 	},
 
 };

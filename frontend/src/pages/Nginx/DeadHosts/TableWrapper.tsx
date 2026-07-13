@@ -7,7 +7,7 @@ import { deleteDeadHost, type Tag, toggleDeadHost } from "src/api/backend";
 import { Button, HasPermission, LoadingPage, TagFilter } from "src/components";
 import { useDeadHosts } from "src/hooks";
 import { T } from "src/locale";
-import { showBulkTagModal, showDeadHostModal, showDeleteConfirmModal, showHelpModal } from "src/modals";
+import { showBulkTagModal, showDeadHostModal, showDeleteConfirmModal, showHelpModal, showViewConfigModal } from "src/modals";
 import { DEAD_HOSTS, MANAGE } from "src/modules/Permissions";
 import { showObjectSuccess } from "src/notifications";
 import Table from "./Table";
@@ -139,6 +139,7 @@ export default function TableWrapper() {
 					onNew={() => showDeadHostModal("new")}
 					onTagClick={handleTagClick}
 					onSelectionChange={setSelectedIds}
+					onViewConfig={(id: number) => showViewConfigModal("dead_host", id)}
 				/>
 			</div>
 		</div>

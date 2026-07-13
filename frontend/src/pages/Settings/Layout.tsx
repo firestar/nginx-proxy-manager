@@ -48,7 +48,7 @@ export default function Layout() {
 								{navItem("notifications", section, setSection, "Notifications")}
 								{navItem("backup", section, setSection, "Backup & Restore")}
 								{navItem("high-availability", section, setSection, "High Availability")}
-								{navItem("backup", section, setSection, "Backup & Restore")}
+								{navItem("status-page", section, setSection, "Status Page")}
 							</div>
 						</div>
 					</div>
