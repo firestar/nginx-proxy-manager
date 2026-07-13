@@ -42,8 +42,8 @@ function HostBreakdownTable({ hosts }: { hosts: HostMetricsTotals[] }) {
 								onClick={() => showProxyHostMetricsModal(h.id)}
 							>
 								<td className="text-truncate" style={{ maxWidth: 240 }}>
-									{h.domain_names[0]}
-									{h.domain_names.length > 1 && (
+									{h.domain_names?.[0] ?? `#${h.id}`}
+									{(h.domain_names?.length ?? 0) > 1 && (
 										<span className="text-muted ms-1 small">+{h.domain_names.length - 1}</span>
 									)}
 								</td>

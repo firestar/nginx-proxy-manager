@@ -13,8 +13,7 @@
 			"name": "settingID",
 			"schema": {
 				"type": "string",
-				"minLength": 1,
-				"enum": ["default-site"]
+				"minLength": 1
 			},
 			"required": true,
 			"description": "Setting ID",
@@ -32,22 +31,29 @@
 					"minProperties": 1,
 					"properties": {
 						"value": {
-							"type": "string",
-							"minLength": 1,
-							"enum": ["congratulations", "404", "444", "redirect", "html"],
-							"example": "html"
+							"description": "Value in almost any form",
+							"example": "html",
+							"anyOf": [
+								{
+									"type": "string"
+								},
+								{
+									"type": "integer"
+								},
+								{
+									"type": "number"
+								},
+								{
+									"type": "object"
+								},
+								{
+									"type": "array"
+								}
+							]
 						},
 						"meta": {
 							"type": "object",
-							"additionalProperties": false,
-							"properties": {
-								"redirect": {
-									"type": "string"
-								},
-								"html": {
-									"type": "string"
-								}
-							},
+							"description": "Extra metadata, shape depends on the setting",
 							"example": {
 								"html": "<p>hello world</p>"
 							}

@@ -72,11 +72,14 @@ router
 					until: typeof req.query.until === "string" ? req.query.until : null,
 				},
 			);
-			const paginated = data.limit !== null || data.offset !== null;
+			// ajv coerceTypes rewrites absent (null) limit/offset to 0 via the
+			// integer anyOf branch, so presence must be read from the raw query.
+			const paginated =
+				typeof req.query.limit !== "undefined" || typeof req.query.offset !== "undefined";
 			const filters = {
 				paginated,
-				limit: data.limit ?? 50,
-				offset: data.offset ?? 0,
+				limit: data.limit || 50,
+				offset: data.offset || 0,
 				object_type: data.object_type,
 				action: data.action,
 				user_id: data.user_id,
