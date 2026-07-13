@@ -27,15 +27,16 @@ outbound WebSocket and applies it safely.
 ## Enrolling a node
 
 1. In the panel go to **Nodes** and add a node. You get a **one-time
-   enrollment token** and a ready-made `docker run` command:
+   enrollment token** and a ready-made `docker run` command with the panel
+   address pre-filled from the page's domain:
 
    ```bash
    docker run -d --name npm-agent --restart unless-stopped \
      -p 80:80 -p 443:443 \
      -v npm-agent-data:/data \
-     -e PANEL_URL="wss://YOUR_PANEL_HOST" \
+     -e PANEL_URL="wss://panel.example.com" \
      -e AGENT_TOKEN="npma_..." \
-     npm-agent:latest
+     panel.kaiad.dev/npm-agent:latest
    ```
 
 2. On first connect the agent exchanges the token for a per-node key (only a
@@ -182,9 +183,9 @@ Use a registry.pull-scoped API credential or an enrollment token as the
 password (see [Kaiad registry docs](https://kaiad.dev/reference/registry.html)).
 
 The panel's `AGENT_IMAGE` environment variable controls the image reference
-shown in the enrollment `docker run` command. Set it to
-`<panel-host>/npm-agent:<sha>` to point enrolling nodes at the Kaiad-built
-image instead of the default `npm-agent:latest`.
+shown in the enrollment `docker run` command. It defaults to
+`panel.kaiad.dev/npm-agent:latest`; set it to `<panel-host>/npm-agent:<sha>`
+to pin enrolling nodes to a specific Kaiad-built image.
 
 ## Limitations
 

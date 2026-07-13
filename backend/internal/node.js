@@ -53,7 +53,7 @@ const sanitize = (row) => {
 };
 
 const dockerCommand = (token) =>
-	`docker run -d --name npm-agent --restart unless-stopped -p 80:80 -p 443:443 -v npm-agent-data:/data -e PANEL_URL="wss://YOUR_PANEL_HOST" -e AGENT_TOKEN="${token}" ${process.env.AGENT_IMAGE || "npm-agent:latest"}`;
+	`docker run -d --name npm-agent --restart unless-stopped -p 80:80 -p 443:443 -v npm-agent-data:/data -e PANEL_URL="wss://YOUR_PANEL_HOST" -e AGENT_TOKEN="${token}" ${process.env.AGENT_IMAGE || "panel.kaiad.dev/npm-agent:latest"}`;
 
 // Debounce timers per node so bursts of host changes produce one snapshot push
 const pushTimers = new Map();

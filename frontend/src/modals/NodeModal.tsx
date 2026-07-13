@@ -68,7 +68,7 @@ const TokenBody = ({ node, onClose }: { node: NPMNode; onClose: () => void }) =>
 			<div className="form-label mt-2">
 				<T id="node.setup-command" />
 			</div>
-			<CopyRow value={node.setupCommand || ""} />
+			<CopyRow value={(node.setupCommand || "").replace("YOUR_PANEL_HOST", window.location.host)} />
 			<div className="form-hint">
 				<T id="node.setup-command.hint" />
 			</div>

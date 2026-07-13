@@ -834,7 +834,7 @@
 		"defaultMessage": "Agent Setup Command"
 	},
 	"node.setup-command.hint": {
-		"defaultMessage": "Run this on the remote server. Replace YOUR_PANEL_HOST with the address agents use to reach this panel."
+		"defaultMessage": "Run this on the remote server. The panel address is pre-filled from this page’s domain."
 	},
 	"node.status.offline": {
 		"defaultMessage": "Offline"
