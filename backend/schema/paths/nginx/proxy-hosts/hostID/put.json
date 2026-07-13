@@ -118,6 +118,18 @@
 						},
 						"balance_method": {
 							"$ref": "../../../../components/proxy-host-object.json#/properties/balance_method"
+						},
+						"check_enabled": {
+							"$ref": "../../../../components/proxy-host-object.json#/properties/check_enabled"
+						},
+						"check_path": {
+							"$ref": "../../../../components/proxy-host-object.json#/properties/check_path"
+						},
+						"check_interval_s": {
+							"$ref": "../../../../components/proxy-host-object.json#/properties/check_interval_s"
+						},
+						"expected_status": {
+							"$ref": "../../../../components/proxy-host-object.json#/properties/expected_status"
 						}
 					}
 				}
