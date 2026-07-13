@@ -32,25 +32,6 @@ import {
 	VIEW,
 } from "src/modules/Permissions";
 import { TrafficCard } from "./TrafficCard";
-import { T } from "src/locale";
-import {
-	showDeadHostModal,
-	showProxyHostModal,
-	showRedirectionHostModal,
-	showStreamModal,
-	showTagModal,
-} from "src/modals";
-import {
-	ADMIN,
-	CERTIFICATES,
-	DEAD_HOSTS,
-	MANAGE,
-	PROXY_HOSTS,
-	REDIRECTION_HOSTS,
-	type Section,
-	STREAMS,
-	VIEW,
-} from "src/modules/Permissions";
 
 interface StatCard {
 	labelId: string;

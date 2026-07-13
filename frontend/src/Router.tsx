@@ -89,10 +89,10 @@ function Router() {
 							<Route path="/audit-log" element={<AuditLog />} />
 							<Route path="/settings" element={<Settings />} />
 							<Route path="/users" element={<Users />} />
+							<Route path="/api-keys" element={<ApiKeys />} />
 							<Route path="/nodes" element={<Nodes />} />
 							<Route path="/nodes/:id" element={<NodeDetail />} />
 							<Route path="/nginx/proxy" element={<ProxyHosts />} />
-							<Route path="/nodes" element={<Nodes />} />
 							<Route path="/nginx/redirection" element={<RedirectionHosts />} />
 							<Route path="/nginx/404" element={<DeadHosts />} />
 							<Route path="/nginx/stream" element={<Streams />} />
