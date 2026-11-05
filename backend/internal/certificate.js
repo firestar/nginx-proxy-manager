@@ -16,6 +16,7 @@ import certificateModel from "../models/certificate.js";
 import tokenModel from "../models/token.js";
 import userModel from "../models/user.js";
 import events, { CERTIFICATE_EXPIRING, CERTIFICATE_RENEWAL_FAILED } from "../lib/events.js";
+import internalAuditLog from "./audit-log.js";
 import internalHost from "./host.js";
 import internalNginx from "./nginx.js";
 

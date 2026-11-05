@@ -109,16 +109,6 @@ export function registerProxyHostTools(server, ctx) {
 		(args) => ctx.request("GET", `${BASE}/${Number(args.id)}`),
 	);
 
-	registerTool(
-		"npm_get_proxy_host_config",
-		{
-			title: "Get proxy host nginx config",
-			description: "Get the rendered nginx config text for a saved proxy host without applying it.",
-			inputSchema: { id: z.number().int().describe("Proxy host id") },
-		},
-		(args) => ctx.request("GET", `${BASE}/${Number(args.id)}/config`),
-	);
-
 
 	registerTool(
 		"npm_create_proxy_host",
